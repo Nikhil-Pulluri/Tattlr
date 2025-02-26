@@ -26,7 +26,7 @@ export class UserService {
   }
 
 
-  async getUser(data : {
+  async getUser(data : { // just testing
     id : string
   }) : Promise<User>{
     return this.prisma.user.findUnique(
@@ -38,11 +38,17 @@ export class UserService {
     )
   }
 
-  async validateUser(
-    data : Prisma.UserWhereUniqueInput
-  ) : Promise<User> {
+  async validateUser(data: Prisma.UserWhereUniqueInput): Promise<User> {
+    const conditions = [];
+    if (data.email) conditions.push({ email: data.email });
+    if (data.username) conditions.push({ username: data.username });
+    if (data.phnum) conditions.push({ phnum: data.phnum });
+  
     return this.prisma.user.findFirst({
-      where : data
-    })
+      where: {
+        OR: conditions.length ? conditions : undefined
+      }
+    });
   }
+  
 }
