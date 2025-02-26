@@ -8,33 +8,83 @@ datasource db {
 }
 
 model User {
-  id       String     @id @default(cuid()) @map("_id")
-  email    String     @unique
-  name     String?
-  password String?
-  role     String
-  chats    ChatUser[]
+  id        String         @id @default(cuid()) @map("_id")
+  email     String         @unique
+  name      String
+  username  String         @unique
+  password  String
+  phnum     String
+  chats     ChatUser[]
+  messages  MessageRead[]
+  typing    TypingStatus[]
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+  deletedAt DateTime?
+  Message   Message[]
+  role      String?
 }
 
 model Chat {
-  id       String     @id @default(cuid()) @map("_id")
-  messages Message[]
-  users    ChatUser[]
+  id           String         @id @default(cuid()) @map("_id")
+  messages     Message[]
+  users        ChatUser[]
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  deletedAt    DateTime?
+  TypingStatus TypingStatus[]
 }
 
 model ChatUser {
-  id     String @id @default(cuid()) @map("_id")
-  userId String
-  chatId String
-  user   User   @relation(fields: [userId], references: [id])
-  chat   Chat   @relation(fields: [chatId], references: [id])
+  id         String    @id @default(cuid()) @map("_id")
+  userId     String
+  chatId     String
+  user       User      @relation(fields: [userId], references: [id])
+  chat       Chat      @relation(fields: [chatId], references: [id])
+  lastReadAt DateTime?
 
   @@unique([userId, chatId])
 }
 
 model Message {
-  id     String @id @default(cuid()) @map("_id")
-  text   String
-  chatId String
-  chat   Chat   @relation(fields: [chatId], references: [id])
+  id          String              @id @default(cuid()) @map("_id")
+  text        String?
+  chatId      String
+  senderId    String
+  chat        Chat                @relation(fields: [chatId], references: [id])
+  sender      User                @relation(fields: [senderId], references: [id])
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  deletedAt   DateTime?
+  attachments MessageAttachment[]
+  readBy      MessageRead[]
+}
+
+model MessageAttachment {
+  id        String  @id @default(cuid()) @map("_id")
+  messageId String
+  url       String
+  type      String
+  message   Message @relation(fields: [messageId], references: [id])
+}
+
+model MessageRead {
+  id        String   @id @default(cuid()) @map("_id")
+  messageId String
+  userId    String
+  readAt    DateTime @default(now())
+  message   Message  @relation(fields: [messageId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@unique([messageId, userId])
+}
+
+model TypingStatus {
+  id       String  @id @default(cuid()) @map("_id")
+  chatId   String
+  userId   String
+  isTyping Boolean
+  chat     Chat    @relation(fields: [chatId], references: [id])
+  user     User    @relation(fields: [userId], references: [id])
+
+  @@unique([chatId, userId])
 }
