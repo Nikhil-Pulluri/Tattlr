@@ -9,6 +9,8 @@ import { PrismaService } from 'src/prisma/prisma.service';
 @Module({
   providers: [ChatGateway, ChatService, PrismaService], // import the message service after developing it
   controllers: [ChatController],
-  imports : [UserModule]
+  imports : [UserModule],
+  exports : [ChatGateway, ChatService]
+
 })
 export class ChatModule {}

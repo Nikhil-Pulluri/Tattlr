@@ -1,11 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { Message } from '@prisma/client';
+import { Chat, Message } from '@prisma/client';
+import { ChatGateway } from 'src/chat/chat.gateway';
+import { ChatService } from 'src/chat/chat.service';
 
 @Injectable()
 export class MessageService {
   constructor(
-    private readonly prisma : PrismaService
+    private readonly prisma : PrismaService,
+    private readonly chatService : ChatService
   ) {}
 
   async createMessage(
@@ -20,6 +23,25 @@ export class MessageService {
         senderId,
       }
     });
+  }
+
+  async sendMessage(
+    message : string,
+    chatId : string,
+    senderId : string,
+  ) : Promise<{message : string}> {
+    const chat : Chat = await this.chatService.getChat(chatId);
+    if(!chat)
+    {
+      console.log("invalid chat provided");
+    }
+
+    const {users} = chat;
+
+
+    return {
+      message : "message sent successfully"
+    }
   }
 
   async getMessages(
