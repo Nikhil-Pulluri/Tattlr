@@ -2,6 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { ChatUser, Chat } from '@prisma/client';
 
+
+
 @Injectable()
 export class ChatService {
   constructor(private readonly prisma : PrismaService) {}
@@ -44,7 +46,7 @@ export class ChatService {
         userId,
         chat.id
       )
-    }
+    } 
 
     return chat
   }
@@ -62,6 +64,7 @@ export class ChatService {
       }}
     )
   }
+
 
 
   

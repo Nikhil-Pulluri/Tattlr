@@ -1,14 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { Chat, Message } from '@prisma/client';
+import { Message } from '@prisma/client';
 import { ChatGateway } from 'src/chat/chat.gateway';
 import { ChatService } from 'src/chat/chat.service';
+
 
 @Injectable()
 export class MessageService {
   constructor(
     private readonly prisma : PrismaService,
-    private readonly chatService : ChatService
+    private readonly chatService : ChatService,
+    private readonly chatGateWay : ChatGateway
   ) {}
 
   async createMessage(
@@ -16,7 +18,9 @@ export class MessageService {
     chatId : string,
     senderId : string,
   ) : Promise<Message> {
-    return this.prisma.message.create({
+    // const response = await this.retrieveUsers(chatId);
+    // const receivers : string[] = response.userIds
+     return this.prisma.message.create({
       data : {
         text,
         chatId,
@@ -25,23 +29,36 @@ export class MessageService {
     });
   }
 
-  async sendMessage(
-    message : string,
+  async retrieveUsers(
     chatId : string,
-    senderId : string,
-  ) : Promise<{message : string}> {
-    const chat : Chat = await this.chatService.getChat(chatId);
-    if(!chat)
-    {
-      console.log("invalid chat provided");
+  ) : Promise<{userIds : string[]}> {
+    const chat = await this.chatService.getChat(chatId);
+    if (!chat) {
+      console.log("Invalid chat provided");
+      throw new Error("Chat not found");
     }
 
-    const {users} = chat;
+    console.log(chat)
 
 
-    return {
-      message : "message sent successfully"
-    }
+
+    const users = await this.prisma.chatUser.findMany({
+      where : {
+        chatId : chat.id
+      }
+    })
+
+
+    const userIds : string[] = []
+
+    users.forEach((user) => {
+      console.log(user.userId); 
+      userIds.push(user.userId)
+      // console.log(user.lastReadAt);  
+    });
+
+    // console.log(users);
+    return {userIds};
   }
 
   async getMessages(

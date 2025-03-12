@@ -2,6 +2,7 @@ import { Controller, Post, Put,  Get, Delete, Body, Param } from '@nestjs/common
 import { MessageService } from './message.service';
 import { UserService } from 'src/user/user.service';
 import { Message } from '@prisma/client';
+import { Public } from 'src/auth/public.decorator';
 
 @Controller('message')
 export class MessageController {
@@ -10,6 +11,7 @@ export class MessageController {
     private readonly userService : UserService
   ) {}
 
+  @Public()
   @Post('create')
   async createMessage(
     @Body() data : {
@@ -23,6 +25,15 @@ export class MessageController {
       data.chatId,
       data.senderId
     )
+  }
+
+  @Public()
+  @Get('retrieve/:id')
+  async retrievUsers(
+    @Param('id') id : string  
+  ) : Promise<{userIds : string[]}>
+  {
+    return this.messageService.retrieveUsers(id)
   }
 
   
