@@ -8,6 +8,7 @@ import {
 import { UserService } from 'src/user/user.service';
 import { User } from '@prisma/client';
 import { Socket } from 'socket.io';
+import { MessageService } from 'src/message/message.service';
 
 @WebSocketGateway({ namespace: '/chat' })
 export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
