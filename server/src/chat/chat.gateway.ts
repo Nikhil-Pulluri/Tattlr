@@ -74,7 +74,6 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       
         if (recipientSocketId) {
           this.server.to(recipientSocketId).emit('message', message.message);
-          // receivers.push(recipientSocketId)
         } else {
           console.log(`Recipient ${recipientId} is not online`);
         }
