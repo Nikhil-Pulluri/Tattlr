@@ -13,12 +13,12 @@ export class AuthService {
   ) {}
 
   async signIn(
-
-      userWhereUniqueInput : Prisma.UserWhereUniqueInput,
+      // userWhereUniqueInput : Prisma.UserWhereUniqueInput,
+      email : string,
       pass : string
     
   ): Promise<{ access_token: string }> {
-    const user : User = await this.userService.validateUser(userWhereUniqueInput);
+    const user : User = await this.userService.validateUser({email});
     const password = user?.password
     const decryptedpass = await bcrypt.compare(pass, password);
     if (!decryptedpass) {
