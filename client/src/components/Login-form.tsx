@@ -7,17 +7,55 @@ import { Eye, EyeClosed } from 'lucide-react'
 
 export default function LoginFormDemo() {
   const [showPassword, setShowPassword] = useState(false)
-  const [context, setContext] = useState('') // This will store email, username, or mobile input
+  const [context, setContext] = useState('')
   const [password, setPassword] = useState('')
-  const [mode, setMode] = useState<'email' | 'mobile' | 'username'>('email') // Default mode is email
+  const [mode, setMode] = useState<'email' | 'mobile' | 'username'>('email')
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
 
-    console.log({
-      context,
-      password,
+    var body = {}
+
+    switch (mode) {
+      case 'email':
+        body = {
+          email: context,
+          password: password,
+        }
+        break
+      case 'mobile':
+        body = {
+          mobile: context,
+          password: password,
+        }
+        break
+      case 'username':
+        body = {
+          username: context,
+          password: password,
+        }
+        break
+    }
+
+    // console.log(body)
+
+    const autToken = await fetch(`${backendUrl}/auth/login`, {
+      method: 'Post',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    }).then((response) => {
+      if (response.ok) {
+        return response.json()
+      } else {
+        throw new Error('Network response was not ok.')
+      }
     })
+
+    // console.log(autToken)
 
     setContext('')
     setPassword('')
@@ -25,7 +63,7 @@ export default function LoginFormDemo() {
 
   return (
     <div className="max-w-xl w-full mx-auto rounded-none md:rounded-2xl p-6 md:p-10 shadow-input bg-white dark:bg-black">
-      <h2 className="font-bold text-2xl text-neutral-800 dark:text-neutral-200">Welcome back to Tattlr</h2>
+      <h2 className="font-bold text-2xl text-neutral-800 dark:text-neutral-200">Welcome back!</h2>
       <p className="text-neutral-600 text-sm max-w-sm mt-2 dark:text-neutral-300">Login to your account</p>
 
       <form className="my-8" onSubmit={handleSubmit}>

@@ -37,7 +37,6 @@ export default function Login() {
         </div>
       </div>
 
-      {/* Right side: Login/Signup Form */}
       <div className="w-full sm:w-1/2 bg-transparent flex justify-center items-center py-10 px-6">
         <div className="flex flex-col w-full max-w-md bg-white dark:bg-black p-8 rounded-2xl shadow-lg">
           <div>{login ? <LoginFormDemo /> : <SignupFormDemo />}</div>
