@@ -139,13 +139,13 @@ export default function SignupFormDemo() {
     // console.log('token:', token)
 
     // Reset the form
-    // setFirstName('')
-    // setLastName('')
-    // setEmail('')
-    // setUsername('')
-    // setMobile('')
-    // setPassword('')
-    // setConfirmPassword('')
+    setFirstName('')
+    setLastName('')
+    setEmail('')
+    setUsername('')
+    setMobile('')
+    setPassword('')
+    setConfirmPassword('')
   }
 
   return (
