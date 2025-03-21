@@ -12,7 +12,7 @@ export class AuthService {
     private jwtService: JwtService
   ) {}
 
-  async signIn(
+  async signInEmail(
       // userWhereUniqueInput : Prisma.UserWhereUniqueInput,
       email : string,
       pass : string
@@ -28,5 +28,49 @@ export class AuthService {
     return {
       access_token: await this.jwtService.signAsync(payload),
     };
+  }
+
+
+  async singInUsername(
+    username : string,
+    pass : string
+  ) : Promise<{ access_token: string }> {
+    const user : User = await this.userService.validateUser(
+      {username}
+    )
+
+    const password = user?.password
+
+    const decryptedpass = await bcrypt.compare(pass, password);
+    if (!decryptedpass) {
+      throw new UnauthorizedException();
+    }
+    const payload = { sub: user.id, username: user.username };
+    return {
+      access_token: await this.jwtService.signAsync(payload),
+    };
+
+  }
+
+
+  async singInMobile(
+    phnum : string,
+    pass : string
+  ) : Promise<{ access_token: string }> {
+    const user : User = await this.userService.validateUser(
+      {phnum}
+    )
+
+    const password = user?.password
+
+    const decryptedpass = await bcrypt.compare(pass, password);
+    if (!decryptedpass) {
+      throw new UnauthorizedException();
+    }
+    const payload = { sub: user.id, username: user.username };
+    return {
+      access_token: await this.jwtService.signAsync(payload),
+    };
+
   }
 }
