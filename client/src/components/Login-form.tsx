@@ -27,7 +27,7 @@ export default function LoginFormDemo() {
         break
       case 'mobile':
         body = {
-          mobile: context,
+          phnum: context,
           password: password,
         }
         break
@@ -41,7 +41,7 @@ export default function LoginFormDemo() {
 
     // console.log(body)
 
-    const autToken = await fetch(`${backendUrl}/auth/login`, {
+    const autToken = await fetch(`${backendUrl}/auth/login/${mode}`, {
       method: 'Post',
       headers: {
         'Content-Type': 'application/json',
@@ -55,7 +55,7 @@ export default function LoginFormDemo() {
       }
     })
 
-    // console.log(autToken)
+    console.log(autToken)
 
     setContext('')
     setPassword('')
