@@ -1,4 +1,3 @@
-
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { UserService } from 'src/user/user.service';
 import { JwtService } from '@nestjs/jwt';
@@ -18,11 +17,13 @@ export class AuthService {
       pass : string
     
   ): Promise<{ access_token: string }> {
-    const user : User = await this.userService.validateUser({email});
-    const password = user?.password
-    const decryptedpass = await bcrypt.compare(pass, password);
+    const user = await this.userService.validateUser({email});
+    if (!user) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+    const decryptedpass = await bcrypt.compare(pass, user.password);
     if (!decryptedpass) {
-      throw new UnauthorizedException();
+      throw new UnauthorizedException('Invalid credentials');
     }
     const payload = { sub: user.id, username: user.email };
     return {
@@ -35,15 +36,13 @@ export class AuthService {
     username : string,
     pass : string
   ) : Promise<{ access_token: string }> {
-    const user : User = await this.userService.validateUser(
-      {username}
-    )
-
-    const password = user?.password
-
-    const decryptedpass = await bcrypt.compare(pass, password);
+    const user = await this.userService.validateUser({username});
+    if (!user) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+    const decryptedpass = await bcrypt.compare(pass, user.password);
     if (!decryptedpass) {
-      throw new UnauthorizedException();
+      throw new UnauthorizedException('Invalid credentials');
     }
     const payload = { sub: user.id, username: user.username };
     return {
@@ -57,15 +56,13 @@ export class AuthService {
     phnum : string,
     pass : string
   ) : Promise<{ access_token: string }> {
-    const user : User = await this.userService.validateUser(
-      {phnum}
-    )
-
-    const password = user?.password
-
-    const decryptedpass = await bcrypt.compare(pass, password);
+    const user = await this.userService.validateUser({phnum});
+    if (!user) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+    const decryptedpass = await bcrypt.compare(pass, user.password);
     if (!decryptedpass) {
-      throw new UnauthorizedException();
+      throw new UnauthorizedException('Invalid credentials');
     }
     const payload = { sub: user.id, username: user.username };
     return {
