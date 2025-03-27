@@ -4,61 +4,74 @@ import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import { Eye, EyeClosed } from 'lucide-react'
+import { useAuth } from '@/context/jwtContext'
+import { useRouter } from 'next/navigation'
 
 export default function LoginFormDemo() {
   const [showPassword, setShowPassword] = useState(false)
   const [context, setContext] = useState('')
   const [password, setPassword] = useState('')
   const [mode, setMode] = useState<'email' | 'mobile' | 'username'>('email')
+  const { signIn } = useAuth()
+  const router = useRouter()
 
   const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
 
-    var body = {}
+    try {
+      var body = {}
 
-    switch (mode) {
-      case 'email':
-        body = {
-          email: context,
-          password: password,
-        }
-        break
-      case 'mobile':
-        body = {
-          phnum: context,
-          password: password,
-        }
-        break
-      case 'username':
-        body = {
-          username: context,
-          password: password,
-        }
-        break
-    }
-
-    // console.log(body)
-
-    const autToken = await fetch(`${backendUrl}/auth/login/${mode}`, {
-      method: 'Post',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(body),
-    }).then((response) => {
-      if (response.ok) {
-        return response.json()
-      } else {
-        throw new Error('Network response was not ok.')
+      switch (mode) {
+        case 'email':
+          body = {
+            email: context,
+            password: password,
+          }
+          break
+        case 'mobile':
+          body = {
+            phnum: context,
+            password: password,
+          }
+          break
+        case 'username':
+          body = {
+            username: context,
+            password: password,
+          }
+          break
       }
-    })
 
-    console.log(autToken)
+      const response = await fetch(`${backendUrl}/auth/login/${mode}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body),
+      })
 
-    setContext('')
-    setPassword('')
+      if (!response.ok) {
+        throw new Error('Login failed')
+      }
+
+      const data = await response.json()
+      console.log('Login response:', data)
+
+      // Update JWT context with the token
+      signIn(data.access_token)
+
+      // Reset form
+      setContext('')
+      setPassword('')
+
+      // Redirect to dashboard
+      router.push('/dashboard')
+    } catch (error) {
+      console.error('Login error:', error)
+      // Here you might want to show an error message to the user
+    }
   }
 
   return (
