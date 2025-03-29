@@ -8,6 +8,13 @@ interface User {
   name?: string
 }
 
+interface JWTDecoded {
+  sub: string
+  username: string
+  iat: number
+  exp: number
+}
+
 interface AuthContextType {
   user: User | null
   token: string | null
@@ -24,31 +31,53 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const storedToken = localStorage.getItem('jwt')
     if (storedToken) {
+      console.log('Found stored token, attempting to decode...')
       setToken(storedToken)
       try {
-        const decoded = jwtDecode.decode(storedToken) as User
-        setUser(decoded)
+        const decoded = jwtDecode.decode(storedToken) as JWTDecoded
+        console.log('Successfully decoded token:', decoded)
+
+        // Map JWT fields to User interface
+        const userData: User = {
+          id: decoded.sub,
+          email: decoded.username, // Using username as email since that's what we have
+          name: decoded.username, // Using username as name since that's what we have
+        }
+        console.log('Mapped user data:', userData)
+        setUser(userData)
       } catch (error) {
         console.error('Invalid token:', error)
         signOut()
       }
+    } else {
+      console.log('No stored token found')
     }
   }, [])
 
   const signIn = (newToken: string) => {
+    console.log('Signing in with new token...')
     localStorage.setItem('jwt', newToken)
     setToken(newToken)
 
     try {
-      const decoded = jwtDecode.decode(newToken) as User
-      setUser(decoded)
-      console.log('User signed in:', decoded)
+      const decoded = jwtDecode.decode(newToken) as JWTDecoded
+      console.log('Successfully decoded new token:', decoded)
+
+      // Map JWT fields to User interface
+      const userData: User = {
+        id: decoded.sub,
+        email: decoded.username,
+        name: decoded.username,
+      }
+      console.log('Mapped user data:', userData)
+      setUser(userData)
     } catch (error) {
-      console.error('Invalid token:', error)
+      console.error('Invalid token during sign in:', error)
     }
   }
 
   const signOut = () => {
+    console.log('Signing out...')
     localStorage.removeItem('jwt')
     setToken(null)
     setUser(null)
@@ -56,8 +85,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Track token and user changes
   useEffect(() => {
-    console.log('Updated Token:', token)
-    console.log('Updated User:', user)
+    console.log('Auth state updated:', {
+      hasToken: !!token,
+      hasUser: !!user,
+      userData: user,
+    })
   }, [token, user])
 
   return <AuthContext.Provider value={{ user, token, signIn, signOut }}>{children}</AuthContext.Provider>

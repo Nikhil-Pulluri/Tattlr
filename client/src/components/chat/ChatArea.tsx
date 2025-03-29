@@ -29,7 +29,7 @@ export default function ChatArea({ selectedChat, message, onMessageChange, onSen
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <div className="relative">
-              <img src="https://via.placeholder.com/40" alt="User avatar" className="w-10 h-10 rounded-full" />
+              <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=default" alt="User avatar" className="w-10 h-10 rounded-full" />
               <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-zinc-900" />
             </div>
             <div>

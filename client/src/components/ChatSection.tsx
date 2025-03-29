@@ -33,7 +33,7 @@ export default function ChatSection() {
   // Dummy data for chats
   const chats: Chat[] = [
     {
-      id: '1',
+      id: 'cm7lrgseh0000i1i41im8y3d3',
       name: 'John Doe',
       lastMessage: 'Hey, how are you?',
       time: '10:30 AM',
@@ -42,7 +42,7 @@ export default function ChatSection() {
       online: true,
     },
     {
-      id: '2',
+      id: 'cm7ypx40i0000i1uwax7pk14o',
       name: 'Jane Smith',
       lastMessage: 'See you tomorrow!',
       time: '9:45 AM',

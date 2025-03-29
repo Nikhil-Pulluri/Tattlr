@@ -2,6 +2,8 @@
 import React, { useState, useEffect } from 'react'
 import { Send, Smile, Paperclip } from 'lucide-react'
 import { useChat } from '@/context/chatContext'
+import { useAuth } from '@/context/jwtContext'
+import { useSocket } from '@/context/socketContext'
 
 interface MessageInputProps {
   message: string
@@ -10,27 +12,69 @@ interface MessageInputProps {
 }
 
 export default function MessageInput({ message, onMessageChange, onSend }: MessageInputProps) {
-  const { setIsTyping, socket } = useChat()
+  const [messageInput, setMessageInput] = useState('')
+  const { selectedChatId } = useChat()
+  const { user } = useAuth()
+  const { socket } = useSocket()
   const [typingTimeout, setTypingTimeout] = useState<NodeJS.Timeout | null>(null)
+
+  // Log user and socket state when they change
+  useEffect(() => {
+    console.log('MessageInput - User state:', user)
+    console.log('MessageInput - Socket state:', {
+      hasSocket: !!socket,
+      isConnected: socket?.connected,
+    })
+  }, [user, socket])
 
   // Handle typing status
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     onMessageChange(e.target.value)
+    setMessageInput(e.target.value)
 
-    // Set typing status to true
-    setIsTyping(true)
+    // Emit typing status
+    if (socket && selectedChatId && user?.id) {
+      console.log('Emitting typing status:', {
+        receiver: selectedChatId,
+        isTyping: true,
+        socketConnected: socket.connected,
+        userData: user,
+      })
 
-    // Clear existing timeout
-    if (typingTimeout) {
-      clearTimeout(typingTimeout)
+      socket.emit('typing', {
+        receiver: selectedChatId,
+        isTyping: true,
+      })
+
+      // Clear existing timeout
+      if (typingTimeout) {
+        clearTimeout(typingTimeout)
+      }
+
+      // Set new timeout to emit not typing after 500ms of inactivity
+      const timeout = setTimeout(() => {
+        console.log('Emitting not typing status:', {
+          receiver: selectedChatId,
+          isTyping: false,
+          socketConnected: socket.connected,
+          userData: user,
+        })
+        socket.emit('typing', {
+          receiver: selectedChatId,
+          isTyping: false,
+        })
+      }, 500)
+
+      setTypingTimeout(timeout)
+    } else {
+      console.log('Socket or user data missing:', {
+        hasSocket: !!socket,
+        selectedChatId,
+        userId: user?.id,
+        userData: user,
+        socketConnected: socket?.connected,
+      })
     }
-
-    // Set new timeout to set typing status to false after 2 seconds of inactivity
-    const timeout = setTimeout(() => {
-      setIsTyping(false)
-    }, 2000)
-
-    setTypingTimeout(timeout)
   }
 
   // Cleanup timeout on unmount
@@ -45,8 +89,13 @@ export default function MessageInput({ message, onMessageChange, onSend }: Messa
   // Handle message send
   const handleSend = () => {
     if (message.trim()) {
-      // Clear typing status before sending
-      setIsTyping(false)
+      // Emit not typing before sending
+      if (socket && selectedChatId && user?.id) {
+        socket.emit('typing', {
+          receiver: selectedChatId,
+          isTyping: false,
+        })
+      }
       onSend()
     }
   }
@@ -63,7 +112,7 @@ export default function MessageInput({ message, onMessageChange, onSend }: Messa
           className="flex-1 p-2 rounded-full bg-gray-100 dark:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-[#4267B2] dark:text-white transition-all"
           value={message}
           onChange={handleInputChange}
-          onKeyPress={(e) => {
+          onKeyDown={(e) => {
             if (e.key === 'Enter' && message.trim()) {
               handleSend()
             }

@@ -1,12 +1,15 @@
 import type { Metadata } from 'next'
-// import { Geist, Geist_Mono } from 'next/font/google'
-import { AuthProvider } from '@/context/jwtContext'
-import { ThemeProvider } from '@/context/themeProvider'
+import { Inter } from 'next/font/google'
 import './globals.css'
+import { AuthProvider } from '@/context/jwtContext'
+import { SocketProvider } from '@/context/socketContext'
+import { ThemeProvider } from '@/context/themeProvider'
+
+const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
   title: 'Tattlr',
-  description: 'Connect with people',
+  description: 'A real-time chat application',
 }
 
 export default function RootLayout({
@@ -16,9 +19,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={``}>
+      <body className={inter.className}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-          <AuthProvider>{children}</AuthProvider>
+          <AuthProvider>
+            <SocketProvider>{children}</SocketProvider>
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>

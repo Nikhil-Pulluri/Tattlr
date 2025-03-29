@@ -21,7 +21,7 @@ interface ChatSidebarProps {
   chats: Chat[]
 }
 
-export default function ChatSidebar({ selectedChat, searchQuery, onSearchChange, onChatSelect, chats }: ChatSidebarProps) {
+export default function ChatSidebar({ selectedChat, searchQuery, onSearchChange, onChatSelect, chats = [] }: ChatSidebarProps) {
   const filteredChats = chats.filter((chat) => chat.name.toLowerCase().includes(searchQuery.toLowerCase()))
 
   return (
