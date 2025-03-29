@@ -8,7 +8,7 @@ import {
 import { UserService } from 'src/user/user.service';
 import { User } from '@prisma/client';
 import { Socket } from 'socket.io';
-import { MessageService } from 'src/message/message.service';
+// import { MessageService } from 'src/message/message.service';
 
 @WebSocketGateway({ namespace: '/chat' })
 export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
@@ -83,6 +83,28 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
 
   
+  }
+
+  @SubscribeMessage('typing')
+  async handleTyping(client: Socket, message: any): Promise<void> {
+    const senderId = this.clients.get(client.id);
+    // console.log(senderId)
+    // if (!senderId) {
+    //   throw new Error("User ID is required.");
+    // }
+    const receiverId = this.getSocketIdByUserId(message.receiver);
+    console.log(receiverId)
+    console.log("typing")
+    this.server.to(receiverId).emit('typing', senderId);
+  }
+
+  getSocketIdByUserId(userId: string): string | undefined {
+    for (const [socketId, storedUserId] of this.clients) {
+      if (storedUserId === userId) {
+        return socketId; // Return the socketId if userId matches
+      }
+    }
+    return undefined; // Return undefined if userId is not found
   }
 
 

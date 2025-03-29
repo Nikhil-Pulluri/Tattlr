@@ -16,7 +16,7 @@ export class AuthService {
       email : string,
       pass : string
     
-  ): Promise<{ access_token: string }> {
+  ): Promise<{ userId : string , access_token: string }> {
     const user = await this.userService.validateUser({email});
     if (!user) {
       throw new UnauthorizedException('Invalid credentials');
@@ -27,6 +27,7 @@ export class AuthService {
     }
     const payload = { sub: user.id, username: user.email };
     return {
+      userId : user.id,
       access_token: await this.jwtService.signAsync(payload),
     };
   }
@@ -35,7 +36,7 @@ export class AuthService {
   async singInUsername(
     username : string,
     pass : string
-  ) : Promise<{ access_token: string }> {
+  ) : Promise<{ userId : string, access_token: string }> {
     const user = await this.userService.validateUser({username});
     if (!user) {
       throw new UnauthorizedException('Invalid credentials');
@@ -46,6 +47,7 @@ export class AuthService {
     }
     const payload = { sub: user.id, username: user.username };
     return {
+      userId : user.id,
       access_token: await this.jwtService.signAsync(payload),
     };
 
@@ -55,7 +57,7 @@ export class AuthService {
   async singInMobile(
     phnum : string,
     pass : string
-  ) : Promise<{ access_token: string }> {
+  ) : Promise<{ userId : string, access_token: string }> {
     const user = await this.userService.validateUser({phnum});
     if (!user) {
       throw new UnauthorizedException('Invalid credentials');
@@ -66,6 +68,7 @@ export class AuthService {
     }
     const payload = { sub: user.id, username: user.username };
     return {
+      userId : user.id,
       access_token: await this.jwtService.signAsync(payload),
     };
 
