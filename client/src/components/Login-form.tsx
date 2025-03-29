@@ -1,21 +1,126 @@
 'use client'
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import { Eye, EyeClosed } from 'lucide-react'
 import { useAuth } from '@/context/jwtContext'
 import { useRouter } from 'next/navigation'
+import { io, Socket } from 'socket.io-client'
 
 export default function LoginFormDemo() {
   const [showPassword, setShowPassword] = useState(false)
   const [context, setContext] = useState('')
   const [password, setPassword] = useState('')
   const [mode, setMode] = useState<'email' | 'mobile' | 'username'>('email')
+  const [socket, setSocket] = useState<Socket | null>(null)
+
   const { signIn } = useAuth()
   const router = useRouter()
 
   const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL
+
+  // const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  //   e.preventDefault()
+
+  //   try {
+  //     var body = {}
+
+  //     switch (mode) {
+  //       case 'email':
+  //         body = {
+  //           email: context,
+  //           password: password,
+  //         }
+  //         break
+  //       case 'mobile':
+  //         body = {
+  //           phnum: context,
+  //           password: password,
+  //         }
+  //         break
+  //       case 'username':
+  //         body = {
+  //           username: context,
+  //           password: password,
+  //         }
+  //         break
+  //     }
+
+  //     console.log(body, mode)
+
+  //     const response = await fetch(`${backendUrl}/auth/login/${mode}`, {
+  //       method: 'POST',
+  //       headers: {
+  //         'Content-Type': 'application/json',
+  //       },
+  //       body: JSON.stringify(body),
+  //     })
+
+  //     if (!response.ok) {
+  //       throw new Error('Login failed')
+  //     }
+
+  //     const data = await response.json()
+  //     console.log('Login response:', data)
+
+  //     // Update JWT context with the token
+  //     signIn(data.access_token)
+
+  //     // Reset form
+  //     setContext('')
+  //     setPassword('')
+
+  //     // useEffect(() => {
+  //     //   // Connect to the WebSocket server
+  //     //   const socketIo = io(`${backendUrl}/chat`, {
+  //     //     transports: ['websocket'], // Use WebSocket transport for real-time communication
+  //     //   });
+
+  //     //   setSocket(socketIo);
+
+  //     //   socketIo.on('connect', () => {
+  //     //     console.log('Connected to chat WebSocket server');
+  //     //   });
+
+  //     //   socketIo.on('join', (msg) => {
+  //     //     console.log(msg); // Display the user joining message
+  //     //   });
+
+  //     //   socketIo.on('leave', (msg) => {
+  //     //     console.log(msg); // Display the user leaving message
+  //     //   });
+
+  //     //   socketIo.on('message', (message) => {
+  //     //     console.log('New message received:', message); // Handle incoming messages
+  //     //   });
+
+  //     //   return () => {
+  //     //     socketIo.disconnect(); // Clean up the connection on component unmount
+  //     //   };
+  //     // }, []);
+
+  //     const socketIo = io(`${backendUrl}/chat`, {
+  //       transports: ['websocket'], // Use WebSocket transport for real-time communication
+  //     });
+
+  //     setSocket(socketIo);
+
+  //     socketIo.on('connect', () => {
+  //       console.log('Connected to chat WebSocket server');
+  //     });
+
+  //     socketIo.on('join', (msg) => {
+  //       console.log(msg); // Display the user joining message
+  //     });
+
+  //     // Redirect to dashboard
+  //     router.push('/dashboard')
+  //   } catch (error) {
+  //     console.error('Login error:', error)
+  //     // Here you might want to show an error message to the user
+  //   }
+  // }
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -44,6 +149,8 @@ export default function LoginFormDemo() {
           break
       }
 
+      console.log(body, mode)
+
       const response = await fetch(`${backendUrl}/auth/login/${mode}`, {
         method: 'POST',
         headers: {
@@ -66,7 +173,25 @@ export default function LoginFormDemo() {
       setContext('')
       setPassword('')
 
-      // Redirect to dashboard
+      // Now that the login is successful, connect to the WebSocket server
+      const socketIo = io(`${backendUrl}/chat`, {
+        transports: ['websocket'], // Use WebSocket transport for real-time communication
+      })
+
+      setSocket(socketIo)
+
+      socketIo.on('connect', () => {
+        console.log('Connected to chat WebSocket server')
+      })
+
+      socketIo.on('join', (msg) => {
+        console.log(msg) // Display the user joining message
+      })
+
+      // Once connected, emit the 'join' event with the userId
+      socketIo.emit('join', { userId: data.userId }) // Assuming `data.userId` is returned in the response
+
+      // Redirect to the dashboard after successful login and WebSocket connection
       router.push('/dashboard')
     } catch (error) {
       console.error('Login error:', error)

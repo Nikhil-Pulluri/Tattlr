@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 // import { Geist, Geist_Mono } from 'next/font/google'
 import { AuthProvider } from '@/context/jwtContext'
+import { ThemeProvider } from '@/context/themeProvider'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -14,9 +15,11 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className={``}>
-        <AuthProvider>{children}</AuthProvider>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+          <AuthProvider>{children}</AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   )

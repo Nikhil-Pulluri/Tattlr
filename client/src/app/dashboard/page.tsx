@@ -1,12 +1,14 @@
+'use client'
 import React from 'react'
-import ChatSection from '@/components/ChatSection'
+import ChatSection from '@/components/chat/ChatSection'
+import { ChatProvider } from '@/context/chatContext'
 
-function page() {
+export default function DashboardPage() {
   return (
-    <div>
-      <ChatSection />
-    </div>
+    <ChatProvider>
+      <div className="h-screen">
+        <ChatSection />
+      </div>
+    </ChatProvider>
   )
 }
-
-export default page
