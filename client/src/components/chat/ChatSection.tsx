@@ -6,7 +6,7 @@ import NewChatDialog from './NewChatDialog'
 import { useChat } from '@/context/chatContext'
 import { useUserData, ChatUser, Chat as BackendChat, Message, User } from '@/context/userDataContext'
 import { useAuth } from '@/context/jwtContext'
-import { io, Socket } from 'socket.io-client'
+// import { io, Socket } from 'socket.io-client'
 import { useSocket } from '@/context/socketContext'
 
 interface ChatSidebarChat {
@@ -45,6 +45,12 @@ export default function ChatSection() {
     avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${cu.user?.name ?? 'default'}`,
     online: true, // TODO: Implement online status
   }))
+
+  useEffect(() => {
+    const transmitTypingStatus = async () => {
+      socket?.emit('typing', { receiver: selectedChat?.chat?.users?.find((u) => u.userId !== userData?.id)?.userId })
+    }
+  }, [message])
 
   // Debug: Monitor selectedChatId changes
   useEffect(() => {

@@ -1,8 +1,8 @@
 'use client'
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { Phone, Video, Send } from 'lucide-react'
 import MessageInput from './MessageInput'
-
+import { useSocket } from '@/context/socketContext'
 interface ChatAreaProps {
   selectedChat: string | null
   selectedChatDetails?: {
@@ -41,6 +41,9 @@ interface ChatAreaProps {
 }
 
 export default function ChatArea({ selectedChat, selectedChatDetails, message, onMessageChange, onSend }: ChatAreaProps) {
+  // const [text, setText] = useState('')
+  const { socket } = useSocket()
+
   if (!selectedChat) {
     return (
       <div className="flex-1 flex items-center justify-center bg-gray-50 dark:bg-zinc-900">
@@ -76,7 +79,11 @@ export default function ChatArea({ selectedChat, selectedChatDetails, message, o
             placeholder="Type a message..."
             className="flex-1 px-4 py-2 rounded-full bg-gray-100 dark:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-[#4267B2] dark:text-white"
             value={message}
-            onChange={(e) => onMessageChange(e.target.value)}
+            onChange={(e) => {
+              onMessageChange(e.target.value)
+              // setText(e.target.value);
+              socket?.emit('typing', { receiver: selectedChatDetails?.chat.users.find((u) => u.userId !== selectedChatDetails.userId)?.userId })
+            }}
             onKeyPress={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault()
