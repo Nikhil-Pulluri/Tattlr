@@ -6,6 +6,8 @@ import NewChatDialog from './NewChatDialog'
 import { useChat } from '@/context/chatContext'
 import { useUserData, ChatUser, Chat as BackendChat, Message, User } from '@/context/userDataContext'
 import { useAuth } from '@/context/jwtContext'
+import { io, Socket } from 'socket.io-client'
+import { useSocket } from '@/context/socketContext'
 
 interface ChatSidebarChat {
   id: string
@@ -23,8 +25,10 @@ export default function ChatSection() {
   const [searchQuery, setSearchQuery] = useState('')
   const [isNewChatDialogOpen, setIsNewChatDialogOpen] = useState(false)
   const { selectedChatId, setSelectedChatId } = useChat()
+  const [selectedChat, setSelectedChat] = useState<ChatUser | undefined>()
   const { userData, setUserData } = useUserData()
   const { token } = useAuth()
+  const { socket } = useSocket()
 
   const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL
 
@@ -46,17 +50,17 @@ export default function ChatSection() {
   useEffect(() => {
     console.group('Selected Chat Debug')
     console.log('Selected Chat ID:', selectedChatId)
-
     if (selectedChatId) {
-      const selectedChat = chatUsers.find((cu) => cu.chat.id === selectedChatId)
-      if (selectedChat) {
+      const foundChat = chatUsers.find((cu) => cu.chat.id === selectedChatId)
+      setSelectedChat(foundChat)
+      if (foundChat) {
         console.log('Selected Chat Details:', {
-          id: selectedChat.chat.id,
-          lastMessage: selectedChat.chat.lastmessage,
-          lastTime: selectedChat.chat.lastTime,
-          unread: selectedChat.chat.unread,
-          messages: selectedChat.chat.messages,
-          users: selectedChat.chat.users.map((u) => ({
+          id: foundChat.chat.id,
+          lastMessage: foundChat.chat.lastmessage,
+          lastTime: foundChat.chat.lastTime,
+          unread: foundChat.chat.unread,
+          messages: foundChat.chat.messages,
+          users: foundChat.chat.users.map((u) => ({
             id: u.userId,
             name: u.user.name,
           })),
@@ -77,6 +81,42 @@ export default function ChatSection() {
     )
     console.groupEnd()
   }, [selectedChatId, chatUsers, userData?.id])
+
+  // Listen for incoming messages
+  useEffect(() => {
+    if (!socket) return
+
+    const handleIncomingMessage = async (data: {
+      message: string
+      userIds: string[]
+      chatId: string // Add chatId to the socket data
+    }) => {
+      console.log('Received message:', data)
+
+      // Refresh data for all users in the chat
+      await refreshUserData()
+
+      // If we have a selected chat and it matches the incoming message's chat
+      if (selectedChatId === data.chatId) {
+        const updatedChatUsers = await fetch(`${backendUrl}/user/${userData?.id}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }).then((res) => res.json())
+
+        const updatedSelectedChat = updatedChatUsers.chats.find((cu: ChatUser) => cu.chat.id === selectedChatId)
+        setSelectedChat(updatedSelectedChat)
+      }
+    }
+
+    // Set up the event listener
+    socket.on('message', handleIncomingMessage)
+
+    // Clean up the event listener when component unmounts
+    return () => {
+      socket.off('message', handleIncomingMessage)
+    }
+  }, [socket, userData?.id, selectedChatId, token, backendUrl])
 
   const refreshUserData = async () => {
     try {
@@ -127,19 +167,56 @@ export default function ChatSection() {
     }
   }
 
-  // useEffect(() => {
-  //   if (selectedChatId) {
-  //     const selectedChat = chatUsers.find((cu) => cu.chat.id === selectedChatId)
-  //     if (selectedChat) {
-  //       setMessage(selectedChat.chat.lastmessage ?? '')
-  //     }
-  //   }
-  // }, [selectedChatId])
+  const handleSend = async () => {
+    if (message.trim() && selectedChatId && selectedChat) {
+      try {
+        // Send message through socket with chatId
+        const msgThroughSocket = async () => {
+          socket?.emit('message', {
+            userIds: selectedChat.chat.users.map((u) => u.userId), // Send to all users in the chat
+            message: message,
+            chatId: selectedChatId, // Include chatId in socket message
+          })
+        }
 
-  const handleSend = () => {
-    if (message.trim() && selectedChatId) {
-      // TODO: Implement message sending logic
-      setMessage('')
+        await msgThroughSocket()
+
+        // Send message to backend
+        const msgSendingStatus = await fetch(`${backendUrl}/message/create`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            text: message,
+            chatId: selectedChatId,
+            senderId: userData?.id,
+          }),
+        })
+
+        if (!msgSendingStatus.ok) {
+          throw new Error('Failed to send message')
+        }
+
+        // Clear the message input
+        setMessage('')
+
+        // Refresh user data to get updated messages
+        await refreshUserData()
+
+        // Update selected chat with new data
+        const updatedChatUsers = await fetch(`${backendUrl}/user/${userData?.id}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }).then((res) => res.json())
+
+        const updatedSelectedChat = updatedChatUsers.chats.find((cu: ChatUser) => cu.chat.id === selectedChatId)
+        setSelectedChat(updatedSelectedChat)
+      } catch (error) {
+        console.error('Error sending message:', error)
+      }
     }
   }
 
@@ -153,7 +230,7 @@ export default function ChatSection() {
         onNewChat={() => setIsNewChatDialogOpen(true)}
         chats={sidebarChats}
       />
-      <ChatArea selectedChat={selectedChatId} message={message} onMessageChange={setMessage} onSend={handleSend} />
+      <ChatArea selectedChatDetails={selectedChat} selectedChat={selectedChatId} message={message} onMessageChange={setMessage} onSend={handleSend} />
       <NewChatDialog isOpen={isNewChatDialogOpen} onClose={() => setIsNewChatDialogOpen(false)} onSubmit={handleNewChat} />
     </div>
   )
