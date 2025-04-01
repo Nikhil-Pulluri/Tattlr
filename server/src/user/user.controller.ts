@@ -20,7 +20,7 @@ export class UserController {
     return this.userService.createUser(data);
   }
 
-  
+  @Public()
   @Get(':id')
   async getUser(
     @Param('id')  id : string

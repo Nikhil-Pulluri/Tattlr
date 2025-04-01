@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { Message } from '@prisma/client';
-import { ChatGateway } from 'src/chat/chat.gateway';
+// import { ChatGateway } from 'src/chat/chat.gateway';
 import { ChatService } from 'src/chat/chat.service';
 
 
@@ -10,7 +10,7 @@ export class MessageService {
   constructor(
     private readonly prisma : PrismaService,
     private readonly chatService : ChatService,
-    private readonly chatGateWay : ChatGateway
+    // private readonly chatGateWay : ChatGateway
   ) {}
 
   async createMessage(

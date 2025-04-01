@@ -4,7 +4,7 @@ import './globals.css'
 import { AuthProvider } from '@/context/jwtContext'
 import { SocketProvider } from '@/context/socketContext'
 import { ThemeProvider } from '@/context/themeProvider'
-
+import { UserDataProvider } from '@/context/userDataContext'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
@@ -22,7 +22,9 @@ export default function RootLayout({
       <body className={inter.className}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           <AuthProvider>
-            <SocketProvider>{children}</SocketProvider>
+            <SocketProvider>
+              <UserDataProvider>{children}</UserDataProvider>
+            </SocketProvider>
           </AuthProvider>
         </ThemeProvider>
       </body>

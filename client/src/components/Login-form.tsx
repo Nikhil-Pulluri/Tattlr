@@ -1,4 +1,3 @@
-'use client'
 import React, { useState, useEffect } from 'react'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
@@ -7,6 +6,7 @@ import { Eye, EyeClosed } from 'lucide-react'
 import { useAuth } from '@/context/jwtContext'
 import { useRouter } from 'next/navigation'
 import { io, Socket } from 'socket.io-client'
+// import { useUserData } from '@/context/userDataContext'
 
 export default function LoginFormDemo() {
   const [showPassword, setShowPassword] = useState(false)
@@ -14,6 +14,7 @@ export default function LoginFormDemo() {
   const [password, setPassword] = useState('')
   const [mode, setMode] = useState<'email' | 'mobile' | 'username'>('email')
   const [socket, setSocket] = useState<Socket | null>(null)
+  // const { setUserData } = useUserData()
 
   const { signIn } = useAuth()
   const router = useRouter()
@@ -67,27 +68,33 @@ export default function LoginFormDemo() {
       // Update JWT context with the token
       signIn(data.access_token)
 
+      // const CompleteUserData = await fetch(`${backendUrl}/user/${data.userId}`)
+      // const CompleteUserDataJson = await CompleteUserData.json()
+
+      // setUserData(CompleteUserDataJson)
+
       // Reset form
       setContext('')
       setPassword('')
 
-      // Now that the login is successful, connect to the WebSocket server
-      const socketIo = io(`${backendUrl}/chat`, {
-        transports: ['websocket'], // Use WebSocket transport for real-time communication
-      })
+      // Avoid connecting socket multiple times
+      if (!socket) {
+        const socketIo = io(`${backendUrl}/chat`, {
+          transports: ['websocket'], // Use WebSocket transport for real-time communication
+        })
 
-      setSocket(socketIo)
+        setSocket(socketIo)
 
-      socketIo.on('connect', () => {
-        console.log('Connected to chat WebSocket server')
-      })
+        socketIo.on('connect', () => {
+          console.log('Connected to chat WebSocket server')
+        })
 
-      socketIo.on('join', (msg) => {
-        console.log(msg) // Display the user joining message
-      })
+        socketIo.on('join', (msg) => {
+          console.log(msg) // Display the user joining message
+        })
 
-      // Once connected, emit the 'join' event with the userId
-      socketIo.emit('join', { userId: data.userId }) // Assuming `data.userId` is returned in the response
+        socketIo.emit('join', { userId: data.userId }) // Assuming `data.userId` is returned in the response
+      }
 
       // Redirect to the dashboard after successful login and WebSocket connection
       router.push('/dashboard')

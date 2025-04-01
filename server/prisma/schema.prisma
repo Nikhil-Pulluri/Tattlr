@@ -8,30 +8,33 @@ datasource db {
 }
 
 model User {
-  id        String         @id @default(cuid()) @map("_id")
-  email     String         @unique
+  id        String        @id @default(cuid()) @map("_id")
+  email     String        @unique
   name      String
-  username  String         @unique
+  username  String        @unique
   password  String
-  phnum     String         @unique
+  phnum     String        @unique
   chats     ChatUser[]
   messages  MessageRead[]
-  typing    TypingStatus[]
-  createdAt DateTime       @default(now())
-  updatedAt DateTime       @updatedAt
+  // typing    TypingStatus[]
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
   deletedAt DateTime?
   Message   Message[]
-  role      String?
+  // role      String?
 }
 
 model Chat {
-  id           String         @id @default(cuid()) @map("_id")
-  messages     Message[]
-  users        ChatUser[]
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
-  deletedAt    DateTime?
-  TypingStatus TypingStatus[]
+  id          String     @id @default(cuid()) @map("_id")
+  messages    Message[]
+  users       ChatUser[]
+  unread      Int        @default(0)
+  lastmessage String?
+  lastTime    DateTime?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  deletedAt   DateTime?
+  // TypingStatus TypingStatus[]
 }
 
 model ChatUser {
@@ -78,13 +81,13 @@ model MessageRead {
   @@unique([messageId, userId])
 }
 
-model TypingStatus {
-  id       String  @id @default(cuid()) @map("_id")
-  chatId   String
-  userId   String
-  isTyping Boolean
-  chat     Chat    @relation(fields: [chatId], references: [id])
-  user     User    @relation(fields: [userId], references: [id])
+// model TypingStatus {
+//   id       String  @id @default(cuid()) @map("_id")
+//   chatId   String
+//   userId   String
+//   isTyping Boolean
+//   chat     Chat    @relation(fields: [chatId], references: [id])
+//   user     User    @relation(fields: [userId], references: [id])
 
-  @@unique([chatId, userId])
-}
+//   @@unique([chatId, userId])
+// }

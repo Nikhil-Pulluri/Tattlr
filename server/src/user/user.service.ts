@@ -26,17 +26,36 @@ export class UserService {
   }
 
 
-  async getUser(data : { // just testing
-    id : string
-  }) : Promise<User>{
-    return this.prisma.user.findUnique(
-      {
-        where : {
-          id : data.id
-        }
-      }
-    )
+  async getUser(data: { id: string }): Promise<User> {
+    return this.prisma.user.findUnique({
+      where: {
+        id: data.id, // The ID of the user to retrieve
+      },
+      include: {
+        // Include all related chats
+        chats: {
+          include: {
+            // Include the chat and its related users
+            chat: {
+              include: {
+                // Include all users in this chat
+                users: {
+                  include: {
+                    user: true, // Include the user related to each chatUser
+                  },
+                },
+                // If you also want to include the messages and typing statuses
+                messages: true, // Optionally include messages in each chat
+              },
+            },
+          },
+        },
+        // Optionally include other related fields from the User model
+        messages: true, // Include the messages read by the user
+      },
+    });
   }
+  
 
   async validateUser(data: Prisma.UserWhereUniqueInput): Promise<User> {
     const conditions = [];

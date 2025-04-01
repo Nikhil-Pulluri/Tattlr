@@ -25,4 +25,12 @@ export class ChatController {
   ) : Promise<Chat> {
     return this.chatService.getChat(id)
   }
+
+  // @Public()
+  // @Get('get-chats/:userid')
+  // async getChatsbyUserId(
+  //   @Param('userid') userid : string
+  // ) : Promise<Chat[]> {
+  //   return this.chatService.getChatsbyUserId(userid)
+  // }
 }

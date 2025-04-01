@@ -18,10 +18,11 @@ interface ChatSidebarProps {
   searchQuery: string
   onSearchChange: (query: string) => void
   onChatSelect: (id: string | null) => void
+  onNewChat: () => void
   chats: Chat[]
 }
 
-export default function ChatSidebar({ selectedChat, searchQuery, onSearchChange, onChatSelect, chats = [] }: ChatSidebarProps) {
+export default function ChatSidebar({ selectedChat, searchQuery, onSearchChange, onChatSelect, onNewChat, chats = [] }: ChatSidebarProps) {
   const filteredChats = chats.filter((chat) => chat.name.toLowerCase().includes(searchQuery.toLowerCase()))
 
   return (
@@ -51,6 +52,16 @@ export default function ChatSidebar({ selectedChat, searchQuery, onSearchChange,
             onChange={(e) => onSearchChange(e.target.value)}
           />
         </div>
+      </div>
+
+      {/* New Chat Button */}
+      <div className="px-4 mb-4">
+        <button onClick={onNewChat} className="w-full py-2 px-4 bg-[#4267B2] text-white rounded-lg hover:bg-[#365899] transition-colors flex items-center justify-center space-x-2">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+          </svg>
+          <span>New Chat</span>
+        </button>
       </div>
 
       {/* Chat List */}

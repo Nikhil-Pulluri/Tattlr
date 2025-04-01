@@ -2,10 +2,14 @@
 import React, { useState, useEffect } from 'react'
 import ChatSidebar from './ChatSidebar'
 import ChatArea from './ChatArea'
+import NewChatDialog from './NewChatDialog'
 import { useChat } from '@/context/chatContext'
+import { useUserData, ChatUser, Chat as BackendChat, Message, User } from '@/context/userDataContext'
+import { useAuth } from '@/context/jwtContext'
 
-interface Chat {
+interface ChatSidebarChat {
   id: string
+  userId: string
   name: string
   lastMessage: string
   time: string
@@ -16,47 +20,121 @@ interface Chat {
 
 export default function ChatSection() {
   const [message, setMessage] = useState('')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [isNewChatDialogOpen, setIsNewChatDialogOpen] = useState(false)
   const { selectedChatId, setSelectedChatId } = useChat()
+  const { userData, setUserData } = useUserData()
+  const { token } = useAuth()
 
-  // Dummy chat data with consistent user IDs
-  const chats: Chat[] = [
-    {
-      id: 'cm7ypx40i0000i1uwax7pk14o', // Using the same ID as your JWT token's sub field
-      name: 'John Doe',
-      lastMessage: 'Hey, how are you?',
-      time: '2:30 PM',
-      unread: 2,
-      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=John',
-      online: true,
-    },
-    {
-      id: 'cm7lrgseh0000i1i41im8y3d3', // Different user ID
-      name: 'Jane Smith',
-      lastMessage: 'See you tomorrow!',
-      time: '1:45 PM',
-      unread: 0,
-      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Jane',
-      online: false,
-    },
-    {
-      id: 'cm8rnacii0003i1o0jdtxurl3', // Different user ID
-      name: 'Mike Johnson',
-      lastMessage: 'Great idea!',
-      time: '12:15 PM',
-      unread: 1,
-      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Mike',
-      online: true,
-    },
-  ]
+  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL
 
-  // Log when selected chat changes
+  const chatUsers: ChatUser[] = userData?.chats ?? []
+
+  // Transform backend chat data to sidebar chat format
+  const sidebarChats: ChatSidebarChat[] = chatUsers.map((cu) => ({
+    id: cu.chat.id,
+    userId: cu.chat.users.find((u) => u.userId !== userData?.id)?.user.id ?? '',
+    name: cu.chat.users.find((u) => u.userId !== userData?.id)?.user.name ?? '',
+    lastMessage: cu.chat.lastmessage ?? '',
+    time: cu.chat.lastTime?.toLocaleTimeString() ?? '',
+    unread: cu.chat.unread,
+    avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${cu.user?.name ?? 'default'}`,
+    online: true, // TODO: Implement online status
+  }))
+
+  // Debug: Monitor selectedChatId changes
   useEffect(() => {
-    console.log('Selected chat changed:', selectedChatId)
+    console.group('Selected Chat Debug')
+    console.log('Selected Chat ID:', selectedChatId)
+
     if (selectedChatId) {
-      const selectedChat = chats.find((chat) => chat.id === selectedChatId)
-      console.log('Selected chat details:', selectedChat)
+      const selectedChat = chatUsers.find((cu) => cu.chat.id === selectedChatId)
+      if (selectedChat) {
+        console.log('Selected Chat Details:', {
+          id: selectedChat.chat.id,
+          lastMessage: selectedChat.chat.lastmessage,
+          lastTime: selectedChat.chat.lastTime,
+          unread: selectedChat.chat.unread,
+          messages: selectedChat.chat.messages,
+          users: selectedChat.chat.users.map((u) => ({
+            id: u.userId,
+            name: u.user.name,
+          })),
+        })
+      } else {
+        console.warn('Selected chat not found in chatUsers array')
+      }
+    } else {
+      console.log('No chat selected')
     }
-  }, [selectedChatId])
+
+    console.log(
+      'Available Chats:',
+      chatUsers.map((cu) => ({
+        id: cu.chat.id,
+        name: cu.chat.users.find((u) => u.userId !== userData?.id)?.user.name,
+      }))
+    )
+    console.groupEnd()
+  }, [selectedChatId, chatUsers, userData?.id])
+
+  const refreshUserData = async () => {
+    try {
+      const response = await fetch(`${backendUrl}/user/${userData?.id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch user data')
+      }
+
+      const data = await response.json()
+      setUserData(data)
+    } catch (error) {
+      console.error('Error refreshing user data:', error)
+    }
+  }
+
+  const handleNewChat = async (userIds: string[]) => {
+    try {
+      const response = await fetch(`${backendUrl}/chat/create-chat`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ userIds }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to create chat')
+      }
+
+      const newChat = await response.json()
+      console.log('New chat created:', newChat)
+
+      // Refresh user data to get the updated chat list
+      await refreshUserData()
+
+      // Select the newly created chat
+      if (newChat.id) {
+        setSelectedChatId(newChat.id)
+      }
+    } catch (error) {
+      console.error('Error creating new chat:', error)
+    }
+  }
+
+  // useEffect(() => {
+  //   if (selectedChatId) {
+  //     const selectedChat = chatUsers.find((cu) => cu.chat.id === selectedChatId)
+  //     if (selectedChat) {
+  //       setMessage(selectedChat.chat.lastmessage ?? '')
+  //     }
+  //   }
+  // }, [selectedChatId])
 
   const handleSend = () => {
     if (message.trim() && selectedChatId) {
@@ -67,8 +145,16 @@ export default function ChatSection() {
 
   return (
     <div className="flex h-full">
-      <ChatSidebar selectedChat={selectedChatId} searchQuery="" onSearchChange={() => {}} onChatSelect={setSelectedChatId} chats={chats} />
+      <ChatSidebar
+        selectedChat={selectedChatId}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        onChatSelect={setSelectedChatId}
+        onNewChat={() => setIsNewChatDialogOpen(true)}
+        chats={sidebarChats}
+      />
       <ChatArea selectedChat={selectedChatId} message={message} onMessageChange={setMessage} onSend={handleSend} />
+      <NewChatDialog isOpen={isNewChatDialogOpen} onClose={() => setIsNewChatDialogOpen(false)} onSubmit={handleNewChat} />
     </div>
   )
 }

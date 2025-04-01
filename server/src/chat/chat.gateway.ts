@@ -8,6 +8,7 @@ import {
 import { UserService } from 'src/user/user.service';
 import { User } from '@prisma/client';
 import { Socket } from 'socket.io';
+import { ExceptionsHandler } from '@nestjs/core/exceptions/exceptions-handler';
 // import { MessageService } from 'src/message/message.service';
 
 @WebSocketGateway({ namespace: '/chat' })
@@ -75,7 +76,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         if (recipientSocketId) {
           this.server.to(recipientSocketId).emit('message', message.message);
         } else {
-          console.log(`Recipient ${recipientId} is not online`);
+          this.server.to(senderId).emit('exception', `${recipientId}`);
         }
 
       }
@@ -93,8 +94,8 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     //   throw new Error("User ID is required.");
     // }
     const receiverId = this.getSocketIdByUserId(message.receiver);
-    console.log(receiverId)
-    console.log("typing")
+    // console.log(receiverId)
+    // console.log("typing")
     this.server.to(receiverId).emit('typing', senderId);
   }
 
