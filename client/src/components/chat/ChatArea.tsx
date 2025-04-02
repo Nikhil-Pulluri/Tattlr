@@ -1,7 +1,8 @@
 'use client'
-import React, { useEffect, useState } from 'react'
-import { Phone, Video, Send } from 'lucide-react'
-import MessageInput from './MessageInput'
+import React, { useEffect, useState, useRef } from 'react'
+import { Send } from 'lucide-react'
+// import MessageInput from './MessageInput'
+import Typing from '../Typing'
 import { useSocket } from '@/context/socketContext'
 interface ChatAreaProps {
   selectedChat: string | null
@@ -42,7 +43,37 @@ interface ChatAreaProps {
 
 export default function ChatArea({ selectedChat, selectedChatDetails, message, onMessageChange, onSend }: ChatAreaProps) {
   // const [text, setText] = useState('')
+  const [typing, setTyping] = useState(false)
   const { socket } = useSocket()
+  const messagesEndRef = useRef<HTMLDivElement>(null)
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }
+
+  useEffect(() => {
+    const handleTyping = (data: { senderId: string }) => {
+      setTyping(true)
+
+      // Reset typing state after a delay (e.g., 3 seconds)
+      const timer = setTimeout(() => {
+        setTyping(false)
+      }, 500)
+
+      // Cleanup timer if the component unmounts or if typing stops
+      return () => clearTimeout(timer)
+    }
+
+    socket?.on('typing', handleTyping)
+
+    return () => {
+      socket?.off('typing')
+    }
+  }, [socket, selectedChatDetails])
+
+  useEffect(() => {
+    scrollToBottom()
+  }, [selectedChatDetails?.chat.messages])
 
   if (!selectedChat) {
     return (
@@ -65,14 +96,18 @@ export default function ChatArea({ selectedChat, selectedChatDetails, message, o
       {/* Messages Area */}
       <div className="flex-1 overflow-y-auto p-4">
         {selectedChatDetails?.chat.messages.map((msg) => (
-          <div key={msg.id} className={`mb-4 ${msg.senderId === selectedChatDetails.userId ? 'text-right' : ''}`}>
-            <div className={`inline-block p-3 rounded-lg ${msg.senderId === selectedChatDetails.userId ? 'bg-[#4267B2] text-white' : 'bg-gray-100 dark:bg-zinc-800'}`}>{msg.text}</div>
+          <div key={msg.id} className={`flex w-full ${msg.senderId === selectedChatDetails.userId ? 'justify-end' : 'justify-start'} mb-4`}>
+            <div className={`max-w-[min(80%,400px)] rounded-lg p-3 ${msg.senderId === selectedChatDetails.userId ? 'bg-[#4267B2] text-white' : 'bg-gray-100 dark:bg-zinc-800'}`}>
+              <p className="break-words whitespace-pre-wrap text-sm">{msg.text}</p>
+            </div>
           </div>
         ))}
+        {typing && <Typing />}
+        <div ref={messagesEndRef} />
       </div>
 
       {/* Message Input */}
-      <div className="p-4 border-t border-gray-200 dark:border-zinc-800">
+      <div className="p-2 border-t border-gray-200 dark:border-zinc-800">
         <div className="flex space-x-2">
           <input
             type="text"

@@ -50,6 +50,7 @@ export default function ChatSection() {
     const transmitTypingStatus = async () => {
       socket?.emit('typing', { receiver: selectedChat?.chat?.users?.find((u) => u.userId !== userData?.id)?.userId })
     }
+    transmitTypingStatus()
   }, [message])
 
   // Debug: Monitor selectedChatId changes
@@ -227,16 +228,22 @@ export default function ChatSection() {
   }
 
   return (
-    <div className="flex h-full">
-      <ChatSidebar
-        selectedChat={selectedChatId}
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-        onChatSelect={setSelectedChatId}
-        onNewChat={() => setIsNewChatDialogOpen(true)}
-        chats={sidebarChats}
-      />
-      <ChatArea selectedChatDetails={selectedChat} selectedChat={selectedChatId} message={message} onMessageChange={setMessage} onSend={handleSend} />
+    <div className="flex h-[calc(100vh)] overflow-hidden mt-0.5">
+      <div className="flex w-full">
+        <div className="w-[350px] shrink-0">
+          <ChatSidebar
+            selectedChat={selectedChatId}
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            onChatSelect={setSelectedChatId}
+            onNewChat={() => setIsNewChatDialogOpen(true)}
+            chats={sidebarChats}
+          />
+        </div>
+
+        <ChatArea selectedChatDetails={selectedChat} selectedChat={selectedChatId} message={message} onMessageChange={setMessage} onSend={handleSend} />
+      </div>
+
       <NewChatDialog isOpen={isNewChatDialogOpen} onClose={() => setIsNewChatDialogOpen(false)} onSubmit={handleNewChat} />
     </div>
   )

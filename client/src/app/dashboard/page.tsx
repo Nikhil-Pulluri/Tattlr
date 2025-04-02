@@ -6,7 +6,7 @@ import { ChatProvider } from '@/context/chatContext'
 export default function DashboardPage() {
   return (
     <ChatProvider>
-      <div className="h-screen">
+      <div className="h-full">
         <ChatSection />
       </div>
     </ChatProvider>
