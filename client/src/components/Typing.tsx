@@ -18,15 +18,15 @@ const Typing = () => {
 
 const StyledWrapper = styled.div`
   .typing-indicator {
-    width: 60px;
-    height: 30px;
+    width: 40px;
+    height: 20px;
     position: relative;
     z-index: 4;
   }
 
   .typing-circle {
-    width: 8px;
-    height: 8px;
+    width: 6px;
+    height: 6px;
     position: absolute;
     border-radius: 50%;
     background-color: #000;
@@ -37,8 +37,8 @@ const StyledWrapper = styled.div`
 
   @keyframes typing-circle7124 {
     0% {
-      top: 20px;
-      height: 5px;
+      top: 15px;
+      height: 4px;
       border-radius: 50px 50px 25px 25px;
       transform: scaleX(1.7);
     }

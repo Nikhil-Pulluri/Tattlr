@@ -1,6 +1,7 @@
 'use client'
 import React, { useEffect, useState, useRef } from 'react'
 import { Send } from 'lucide-react'
+import { useChat } from '@/context/chatContext'
 // import MessageInput from './MessageInput'
 import Typing from '../Typing'
 import { useSocket } from '@/context/socketContext'
@@ -46,6 +47,7 @@ export default function ChatArea({ selectedChat, selectedChatDetails, message, o
   const [typing, setTyping] = useState(false)
   const { socket } = useSocket()
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const { selectedChatId } = useChat()
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -58,7 +60,7 @@ export default function ChatArea({ selectedChat, selectedChatDetails, message, o
       // Reset typing state after a delay (e.g., 3 seconds)
       const timer = setTimeout(() => {
         setTyping(false)
-      }, 500)
+      }, 2000)
 
       // Cleanup timer if the component unmounts or if typing stops
       return () => clearTimeout(timer)
@@ -102,7 +104,7 @@ export default function ChatArea({ selectedChat, selectedChatDetails, message, o
             </div>
           </div>
         ))}
-        {typing && <Typing />}
+        {typing && selectedChat == selectedChatId && <Typing />}
         <div ref={messagesEndRef} />
       </div>
 

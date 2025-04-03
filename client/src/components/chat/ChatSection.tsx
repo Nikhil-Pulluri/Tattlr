@@ -35,16 +35,22 @@ export default function ChatSection() {
   const chatUsers: ChatUser[] = userData?.chats ?? []
 
   // Transform backend chat data to sidebar chat format
-  const sidebarChats: ChatSidebarChat[] = chatUsers.map((cu) => ({
-    id: cu.chat.id,
-    userId: cu.chat.users.find((u) => u.userId !== userData?.id)?.user.id ?? '',
-    name: cu.chat.users.find((u) => u.userId !== userData?.id)?.user.name ?? '',
-    lastMessage: cu.chat.lastmessage ?? '',
-    time: cu.chat.lastTime?.toLocaleTimeString() ?? '',
-    unread: cu.chat.unread,
-    avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${cu.user?.name ?? 'default'}`,
-    online: true, // TODO: Implement online status
-  }))
+  const sidebarChats: ChatSidebarChat[] = chatUsers
+    ?.sort((a, b) => {
+      const timeA = a.chat.lastTime ? new Date(a.chat.lastTime).getTime() : 0
+      const timeB = b.chat.lastTime ? new Date(b.chat.lastTime).getTime() : 0
+      return timeB - timeA // Sort in descending order (newest first)
+    })
+    .map((cu) => ({
+      id: cu.chat.id,
+      userId: cu.chat.users.find((u) => u.userId !== userData?.id)?.userId ?? '',
+      name: cu.chat.users.find((u) => u.userId !== userData?.id)?.user.name ?? '',
+      lastMessage: cu.chat.lastmessage ?? '',
+      time: cu.chat.lastTime ? new Date(cu.chat.lastTime).toLocaleTimeString() : '',
+      unread: cu.chat.unread,
+      avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${cu.user?.name ?? 'default'}`,
+      online: true, // TODO: Implement online status
+    }))
 
   useEffect(() => {
     const transmitTypingStatus = async () => {
@@ -178,15 +184,11 @@ export default function ChatSection() {
     if (message.trim() && selectedChatId && selectedChat) {
       try {
         // Send message through socket with chatId
-        const msgThroughSocket = async () => {
-          socket?.emit('message', {
-            userIds: selectedChat.chat.users.map((u) => u.userId), // Send to all users in the chat
-            message: message,
-            chatId: selectedChatId, // Include chatId in socket message
-          })
-        }
-
-        await msgThroughSocket()
+        socket?.emit('message', {
+          userIds: selectedChat.chat.users.map((u) => u.userId), // Send to all users in the chat
+          message: message,
+          chatId: selectedChatId, // Include chatId in socket message
+        })
 
         // Send message to backend
         const msgSendingStatus = await fetch(`${backendUrl}/message/create`, {

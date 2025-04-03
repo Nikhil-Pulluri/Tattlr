@@ -20,13 +20,26 @@ export class MessageService {
   ) : Promise<Message> {
     // const response = await this.retrieveUsers(chatId);
     // const receivers : string[] = response.userIds
-     return this.prisma.message.create({
+     const msg = await this.prisma.message.create({
       data : {
         text,
         chatId,
         senderId,
       }
     });
+
+    await this.prisma.chat.updateMany({
+      data : {
+        lastmessage : text,
+        lastTime : new Date()
+      },
+      where : {
+        id : chatId
+      },
+
+    })
+
+    return msg;
   }
 
   async retrieveUsers(
