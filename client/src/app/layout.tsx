@@ -5,6 +5,7 @@ import { AuthProvider } from '@/context/jwtContext'
 import { SocketProvider } from '@/context/socketContext'
 import { ThemeProvider } from '@/context/themeProvider'
 import { UserDataProvider } from '@/context/userDataContext'
+import { ChatListProvider } from '@/context/chatListContext'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
@@ -23,7 +24,9 @@ export default function RootLayout({
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           <AuthProvider>
             <SocketProvider>
-              <UserDataProvider>{children}</UserDataProvider>
+              <UserDataProvider>
+                <ChatListProvider>{children}</ChatListProvider>
+              </UserDataProvider>
             </SocketProvider>
           </AuthProvider>
         </ThemeProvider>

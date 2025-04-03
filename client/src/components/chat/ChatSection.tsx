@@ -8,17 +8,18 @@ import { useUserData, ChatUser, Chat as BackendChat, Message, User } from '@/con
 import { useAuth } from '@/context/jwtContext'
 // import { io, Socket } from 'socket.io-client'
 import { useSocket } from '@/context/socketContext'
+import { useChatList } from '@/context/chatListContext'
 
-interface ChatSidebarChat {
-  id: string
-  userId: string
-  name: string
-  lastMessage: string
-  time: string
-  unread: number
-  avatar: string
-  online: boolean
-}
+// interface ChatSidebarChat {
+//   id: string
+//   userId: string
+//   name: string
+//   lastMessage: string
+//   time: string
+//   unread: number
+//   avatar: string
+//   online: boolean
+// }
 
 export default function ChatSection() {
   const [message, setMessage] = useState('')
@@ -29,28 +30,28 @@ export default function ChatSection() {
   const { userData, setUserData } = useUserData()
   const { token } = useAuth()
   const { socket } = useSocket()
+  const { chatUsers, updateChatList } = useChatList()
 
   const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL
 
-  const chatUsers: ChatUser[] = userData?.chats ?? []
+  // const chatUsers: ChatUser[] = userData?.chats ?? []
 
-  // Transform backend chat data to sidebar chat format
-  const sidebarChats: ChatSidebarChat[] = chatUsers
-    ?.sort((a, b) => {
-      const timeA = a.chat.lastTime ? new Date(a.chat.lastTime).getTime() : 0
-      const timeB = b.chat.lastTime ? new Date(b.chat.lastTime).getTime() : 0
-      return timeB - timeA // Sort in descending order (newest first)
-    })
-    .map((cu) => ({
-      id: cu.chat.id,
-      userId: cu.chat.users.find((u) => u.userId !== userData?.id)?.userId ?? '',
-      name: cu.chat.users.find((u) => u.userId !== userData?.id)?.user.name ?? '',
-      lastMessage: cu.chat.lastmessage ?? '',
-      time: cu.chat.lastTime ? new Date(cu.chat.lastTime).toLocaleTimeString() : '',
-      unread: cu.chat.unread,
-      avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${cu.user?.name ?? 'default'}`,
-      online: true, // TODO: Implement online status
-    }))
+  const PresentchatUsers = chatUsers
+
+  const sidebarChats = PresentchatUsers?.sort((a, b) => {
+    const timeA = a.chat.lastTime ? new Date(a.chat.lastTime).getTime() : 0
+    const timeB = b.chat.lastTime ? new Date(b.chat.lastTime).getTime() : 0
+    return timeB - timeA
+  }).map((cu) => ({
+    id: cu.chat.id,
+    userId: cu.chat.users.find((u) => u.userId !== userData?.id)?.userId ?? '',
+    name: cu.chat.users.find((u) => u.userId !== userData?.id)?.user.name ?? '',
+    lastMessage: cu.chat.lastmessage ?? '',
+    time: cu.chat.lastTime ? new Date(cu.chat.lastTime).toLocaleTimeString() : '',
+    unread: cu.chat.unread,
+    avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${cu.user?.name ?? 'default'}`,
+    online: true, // TODO: Implement online status
+  }))
 
   useEffect(() => {
     const transmitTypingStatus = async () => {
@@ -59,7 +60,6 @@ export default function ChatSection() {
     transmitTypingStatus()
   }, [message])
 
-  // Debug: Monitor selectedChatId changes
   useEffect(() => {
     console.group('Selected Chat Debug')
     console.log('Selected Chat ID:', selectedChatId)
@@ -110,16 +110,16 @@ export default function ChatSection() {
       await refreshUserData()
 
       // If we have a selected chat and it matches the incoming message's chat
-      if (selectedChatId === data.chatId) {
-        const updatedChatUsers = await fetch(`${backendUrl}/user/${userData?.id}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }).then((res) => res.json())
+      // if (selectedChatId === data.chatId) {
+      // const updatedChatUsers = await fetch(`${backendUrl}/user/${userData?.id}`, {
+      //   headers: {
+      //     Authorization: `Bearer ${token}`,
+      //   },
+      // }).then((res) => res.json())
 
-        const updatedSelectedChat = updatedChatUsers.chats.find((cu: ChatUser) => cu.chat.id === selectedChatId)
-        setSelectedChat(updatedSelectedChat)
-      }
+      const updatedSelectedChat = userData?.chats.find((cu: ChatUser) => cu.chat.id === selectedChatId)
+      setSelectedChat(updatedSelectedChat)
+      // }
     }
 
     // Set up the event listener
@@ -145,6 +145,7 @@ export default function ChatSection() {
 
       const data = await response.json()
       setUserData(data)
+      await updateChatList()
     } catch (error) {
       console.error('Error refreshing user data:', error)
     }
