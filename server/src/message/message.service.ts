@@ -28,7 +28,7 @@ export class MessageService {
       }
     });
 
-    await this.prisma.chat.updateMany({
+    await this.prisma.chat.update({ // updateMany?
       data : {
         lastmessage : text,
         lastTime : new Date()

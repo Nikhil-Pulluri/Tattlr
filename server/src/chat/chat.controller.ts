@@ -1,6 +1,6 @@
 import { Controller, Post, Body, Get, Param } from '@nestjs/common';
 import { ChatService } from './chat.service';
-import { Chat } from '@prisma/client';
+import { Chat, ChatUser } from '@prisma/client';
 import { Public } from 'src/auth/public.decorator';
 
 @Controller('chat')
@@ -16,6 +16,13 @@ export class ChatController {
   ) : Promise<Chat> {
     // console.log(data.userIds);
     return this.chatService.createChat(data.userIds)
+  }
+
+  @Get('get-my-chats/:userId')
+  async getMyChats(
+    @Param('userId') userId : string
+  ) : Promise<ChatUser[]> {
+    return this.chatService.getMyChats(userId)
   }
 
   @Public()

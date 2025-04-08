@@ -30,13 +30,13 @@ export default function ChatSection() {
   const { userData, setUserData } = useUserData()
   const { token } = useAuth()
   const { socket } = useSocket()
-  const { chatUsers, updateChatList } = useChatList()
+  const { chatUsers, setChatUsers } = useChatList()
 
   const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL
 
   // const chatUsers: ChatUser[] = userData?.chats ?? []
 
-  const PresentchatUsers = chatUsers
+  const PresentchatUsers = userData?.chats
 
   const sidebarChats = PresentchatUsers?.sort((a, b) => {
     const timeA = a.chat.lastTime ? new Date(a.chat.lastTime).getTime() : 0
@@ -49,7 +49,8 @@ export default function ChatSection() {
     lastMessage: cu.chat.lastmessage ?? '',
     time: cu.chat.lastTime ? new Date(cu.chat.lastTime).toLocaleTimeString() : '',
     unread: cu.chat.unread,
-    avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${cu.user?.name ?? 'default'}`,
+    // avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${cu.user?.name ?? 'default'}`,
+    avatar: '/bean.jpg',
     online: true, // TODO: Implement online status
   }))
 
@@ -64,7 +65,7 @@ export default function ChatSection() {
     console.group('Selected Chat Debug')
     console.log('Selected Chat ID:', selectedChatId)
     if (selectedChatId) {
-      const foundChat = chatUsers.find((cu) => cu.chat.id === selectedChatId)
+      const foundChat = PresentchatUsers?.find((cu) => cu.chat.id === selectedChatId)
       setSelectedChat(foundChat)
       if (foundChat) {
         console.log('Selected Chat Details:', {
@@ -99,27 +100,53 @@ export default function ChatSection() {
   useEffect(() => {
     if (!socket) return
 
-    const handleIncomingMessage = async (data: {
-      message: string
-      userIds: string[]
-      chatId: string // Add chatId to the socket data
-    }) => {
+    const handleIncomingMessage = async (data: { message: string; userIds: string[]; chatId: string }) => {
+      console.log('handleIncoming: ', Date.now())
       console.log('Received message:', data)
 
-      // Refresh data for all users in the chat
-      await refreshUserData()
+      // Refresh user data first
 
-      // If we have a selected chat and it matches the incoming message's chat
-      // if (selectedChatId === data.chatId) {
-      // const updatedChatUsers = await fetch(`${backendUrl}/user/${userData?.id}`, {
-      //   headers: {
-      //     Authorization: `Bearer ${token}`,
-      //   },
-      // }).then((res) => res.json())
+      setTimeout(async () => {
+        await refreshUserData()
+      }, 2000)
 
+      console.log(userData?.chats.find((cu: ChatUser) => cu.chat.id === selectedChatId))
+
+      // After the data is refreshed, get the updated user data
+
+      updateNext(data.message)
+
+      // setTimeout(() => {
+      //   console.log('Updating next')
+      //   updateNext(data.message)
+      // }, 1000)
+    }
+
+    const updateNext = (data: string) => {
       const updatedSelectedChat = userData?.chats.find((cu: ChatUser) => cu.chat.id === selectedChatId)
-      setSelectedChat(updatedSelectedChat)
-      // }
+      if (updatedSelectedChat) {
+        setSelectedChat(updatedSelectedChat)
+      }
+
+      // Update the chats after refreshing data
+      setChatUsers((prevChatUsers) => {
+        const updatedChats = prevChatUsers.map((cu: ChatUser) => {
+          if (cu.chat.id === selectedChatId) {
+            return {
+              ...cu,
+              chat: {
+                ...cu.chat,
+                lastTime: new Date(), // <-- Use Date object instead of ISO string
+                lastmessage: data, // Optional, if you want to update the last message
+              },
+            }
+          }
+          return cu
+        })
+        return updatedChats
+      })
+
+      console.log(chatUsers)
     }
 
     // Set up the event listener
@@ -129,7 +156,7 @@ export default function ChatSection() {
     return () => {
       socket.off('message', handleIncomingMessage)
     }
-  }, [socket, userData?.id, selectedChatId, token, backendUrl])
+  }, [socket, userData?.id, selectedChatId, token, backendUrl, setChatUsers])
 
   const refreshUserData = async () => {
     try {
@@ -145,7 +172,9 @@ export default function ChatSection() {
 
       const data = await response.json()
       setUserData(data)
-      await updateChatList()
+      if (data.chats) {
+        setChatUsers(data.chats) // Use setChatUsers directly
+      }
     } catch (error) {
       console.error('Error refreshing user data:', error)
     }
@@ -182,6 +211,7 @@ export default function ChatSection() {
   }
 
   const handleSend = async () => {
+    console.log('handleSend: ', Date.now())
     if (message.trim() && selectedChatId && selectedChat) {
       try {
         // Send message through socket with chatId
@@ -190,6 +220,7 @@ export default function ChatSection() {
           message: message,
           chatId: selectedChatId, // Include chatId in socket message
         })
+        console.log('message sent', Date.now())
 
         // Send message to backend
         const msgSendingStatus = await fetch(`${backendUrl}/message/create`, {
@@ -204,6 +235,7 @@ export default function ChatSection() {
             senderId: userData?.id,
           }),
         })
+        console.log('message sent to backend', Date.now())
 
         if (!msgSendingStatus.ok) {
           throw new Error('Failed to send message')
@@ -240,7 +272,7 @@ export default function ChatSection() {
             onSearchChange={setSearchQuery}
             onChatSelect={setSelectedChatId}
             onNewChat={() => setIsNewChatDialogOpen(true)}
-            chats={sidebarChats}
+            chats={sidebarChats ?? []}
           />
         </div>
 

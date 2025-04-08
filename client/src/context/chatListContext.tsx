@@ -1,30 +1,28 @@
 'use client'
 import React, { createContext, useContext, useState, useEffect } from 'react'
-import { useUserData } from './userDataContext'
 import { ChatUser } from './userDataContext'
+import { useUserData } from './userDataContext'
 
 interface ChatListContextType {
   chatUsers: ChatUser[]
-  updateChatList: () => Promise<void>
+  setChatUsers: React.Dispatch<React.SetStateAction<ChatUser[]>>
 }
 
 const ChatListContext = createContext<ChatListContextType | undefined>(undefined)
 
 export function ChatListProvider({ children }: { children: React.ReactNode }) {
-  const [chatUsers, setChatUsers] = useState<ChatUser[]>([])
   const { userData } = useUserData()
+  const [chatUsers, setChatUsers] = useState<ChatUser[]>(
+    userData?.chats.map((cu: ChatUser) => ({
+      ...cu,
+      chat: {
+        ...cu.chat,
+        lastTime: cu.chat.lastTime,
+      },
+    })) || []
+  )
 
-  const updateChatList = async () => {
-    if (userData?.chats) {
-      setChatUsers(userData.chats)
-    }
-  }
-
-  useEffect(() => {
-    updateChatList()
-  }, [userData])
-
-  return <ChatListContext.Provider value={{ chatUsers, updateChatList }}>{children}</ChatListContext.Provider>
+  return <ChatListContext.Provider value={{ chatUsers, setChatUsers }}>{children}</ChatListContext.Provider>
 }
 
 export function useChatList() {
