@@ -112,8 +112,6 @@ export default function ChatSection() {
 
       console.log(userData?.chats.find((cu: ChatUser) => cu.chat.id === selectedChatId))
 
-      // After the data is refreshed, get the updated user data
-
       updateNext(data.message)
 
       // setTimeout(() => {
@@ -128,7 +126,6 @@ export default function ChatSection() {
         setSelectedChat(updatedSelectedChat)
       }
 
-      // Update the chats after refreshing data
       setChatUsers((prevChatUsers) => {
         const updatedChats = prevChatUsers.map((cu: ChatUser) => {
           if (cu.chat.id === selectedChatId) {
@@ -136,8 +133,8 @@ export default function ChatSection() {
               ...cu,
               chat: {
                 ...cu.chat,
-                lastTime: new Date(), // <-- Use Date object instead of ISO string
-                lastmessage: data, // Optional, if you want to update the last message
+                lastTime: new Date(),
+                lastmessage: data,
               },
             }
           }
