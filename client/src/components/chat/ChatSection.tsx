@@ -9,6 +9,7 @@ import { useAuth } from '@/context/jwtContext'
 // import { io, Socket } from 'socket.io-client'
 import { useSocket } from '@/context/socketContext'
 import { useChatList } from '@/context/chatListContext'
+import messageQueue from '@/lib/queues/messageQueue'
 
 // interface ChatSidebarChat {
 //   id: string
@@ -49,8 +50,8 @@ export default function ChatSection() {
     lastMessage: cu.chat.lastmessage ?? '',
     time: cu.chat.lastTime ? new Date(cu.chat.lastTime).toLocaleTimeString() : '',
     unread: cu.chat.unread,
-    // avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${cu.user?.name ?? 'default'}`,
-    avatar: '/bean.jpg',
+    avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${cu.user?.name ?? 'default'}`,
+    // avatar: '/bean.jpg',
     online: true, // TODO: Implement online status
   }))
 
@@ -136,8 +137,8 @@ export default function ChatSection() {
               ...cu,
               chat: {
                 ...cu.chat,
-                lastTime: new Date(), // <-- Use Date object instead of ISO string
-                lastmessage: data, // Optional, if you want to update the last message
+                lastTime: new Date(),
+                lastmessage: data,
               },
             }
           }
@@ -222,22 +223,28 @@ export default function ChatSection() {
         })
         console.log('message sent', Date.now())
 
+        // const messageData = { message, selectedChatId, senderId: userData?.id }
+
+        // const messageQueueEntry = await messageQueue.add('message', messageData)
+
+        // console.log('messageQueueEntry', messageQueueEntry)
+
         // Send message to backend
-        const msgSendingStatus = await fetch(`${backendUrl}/message/create`, {
+
+        console.log('message', message)
+        console.log('selectedChatId', selectedChatId)
+        console.log('senderId', userData?.id)
+
+        const msgAdded = await fetch('api/sendMessage', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({
-            text: message,
-            chatId: selectedChatId,
-            senderId: userData?.id,
-          }),
+          body: JSON.stringify({ message, chatId: selectedChatId, senderId: userData?.id }),
         })
-        console.log('message sent to backend', Date.now())
 
-        if (!msgSendingStatus.ok) {
+        if (!msgAdded.ok) {
           throw new Error('Failed to send message')
         }
 
