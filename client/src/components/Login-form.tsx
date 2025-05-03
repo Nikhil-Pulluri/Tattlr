@@ -81,6 +81,7 @@ export default function LoginFormDemo() {
       if (!socket) {
         const socketIo = io(`${backendUrl}/chat`, {
           transports: ['websocket'], // Use WebSocket transport for real-time communication
+          timeout: 20000,
         })
 
         setSocket(socketIo)
