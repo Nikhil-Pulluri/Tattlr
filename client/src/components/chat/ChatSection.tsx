@@ -133,6 +133,7 @@ export default function ChatSection() {
         setSelectedChat(updatedSelectedChat)
       }
 
+
       if (!data?.userIds || !Array.isArray(data.userIds)) return
 
       const senderId = data.userIds.find((id) => id !== selectedChat?.userId) || data.userIds[0]
@@ -161,6 +162,7 @@ export default function ChatSection() {
           },
         }
       })
+
 
       setChatUsers((prevChatUsers) => {
         const updatedChats = prevChatUsers.map((cu: ChatUser) => {
