@@ -27,23 +27,29 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       transports: ['websocket'],
       reconnection: true,
       reconnectionAttempts: 5,
-      reconnectionDelay: 1000,
+      reconnectionDelay: 10,
+      timeout: 10000,
     })
 
-    socketIo.on('connect', () => {
-      console.log('Connected to chat WebSocket server')
-      setIsConnected(true)
+    function handleConnection() {
+      socketIo.on('connect', () => {
+        console.log('Connected to chat WebSocket server')
+        setIsConnected(true)
 
-      // Join the chat room with user ID when connected
-      if (user?.id) {
-        console.log('Joining chat with user ID:', user.id)
-        socketIo.emit('join', { userId: user.id })
-      }
-    })
+        // Join the chat room with user ID when connected
+        if (user?.id) {
+          console.log('Joining chat with user ID:', user.id)
+          socketIo.emit('join', { userId: user.id })
+        }
+      })
+    }
+
+    handleConnection()
 
     socketIo.on('connect_error', (error) => {
       console.error('Socket connection error:', error)
       setIsConnected(false)
+      handleConnection()
     })
 
     socketIo.on('disconnect', (reason) => {
@@ -53,6 +59,7 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
 
     socketIo.on('error', (error) => {
       console.error('Socket error:', error)
+      handleConnection()
     })
 
     setSocket(socketIo)

@@ -11,7 +11,11 @@ import { Socket } from 'socket.io';
 import { ExceptionsHandler } from '@nestjs/core/exceptions/exceptions-handler';
 // import { MessageService } from 'src/message/message.service';
 
-@WebSocketGateway({ namespace: '/chat' })
+@WebSocketGateway({ namespace: '/chat',
+                    cors: {
+                      origin: '*',
+                      credentials: true,
+                    }, },)
 export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   constructor(private readonly userService: UserService) {}
 
