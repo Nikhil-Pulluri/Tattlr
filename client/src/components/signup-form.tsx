@@ -16,72 +16,9 @@ export default function SignupForm() {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
 
-  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL
+  // const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL
 
   // const { signIn, user, token } = useAuth()
-
-  // const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-  //   e.preventDefault()
-
-  //   // Log the form data
-  //   // console.log({
-  //   //   firstName,
-  //   //   lastName,
-  //   //   email,
-  //   //   username,
-  //   //   mobile,
-  //   //   password,
-  //   //   confirmPassword,
-  //   // })
-
-  //   const name = firstName + ' ' + lastName
-  //   const body = {
-  //     email: email,
-  //     name: name,
-  //     username: username,
-  //     password: password,
-  //     phnum: mobile,
-  //   }
-
-  //   const response = await fetch(`${backendUrl}/user/create`, {
-  //     method: 'POST',
-  //     headers: {
-  //       'Content-Type': 'application/json',
-  //     },
-  //     body: JSON.stringify(body),
-  //   })
-
-  //   const data = await response.json()
-  //   console.log(data)
-
-  //   if (data.email === email) {
-  //     const loginResponse = await fetch(`${backendUrl}/auth/login`, {
-  //       method: 'POST',
-  //       headers: {
-  //         'Content-Type': 'application/json',
-  //       },
-  //       body: JSON.stringify({
-  //         email: email,
-  //         password: password,
-  //       }),
-  //     })
-
-  //     const loginData = await loginResponse.json()
-  //     signIn(loginData.access_token)
-  //     console.log(user)
-  //     console.log(token)
-  //     console.log(loginData)
-  //   }
-
-  //   // reset the form
-  //   setFirstName('')
-  //   setLastName('')
-  //   setEmail('')
-  //   setUsername('')
-  //   setMobile('')
-  //   setPassword('')
-  //   setConfirmPassword('')
-  // }
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -96,8 +33,8 @@ export default function SignupForm() {
     }
 
     try {
-      // Create user (sign up)
-      const response = await fetch(`${backendUrl}/user/create`, {
+      console.log('called')
+      const response = await fetch(`/api/auth/signup`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -108,35 +45,32 @@ export default function SignupForm() {
       const data = await response.json()
       console.log(data)
 
-      if (response.status === 201 && data.email === email) {
-        const loginResponse = await fetch(`${backendUrl}/auth/login`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            email: email,
-            password: password,
-          }),
-        })
+      // if ({response.status === 201 && }data.status === 'success') {
+      //   const loginResponse = await fetch(`${backendUrl}/auth/login`, {
+      //     method: 'POST',
+      //     headers: {
+      //       'Content-Type': 'application/json',
+      //     },
+      //     body: JSON.stringify({
+      //       email: email,
+      //       password: password,
+      //     }),
+      //   })
 
-        const loginData = await loginResponse.json()
+      //   const loginData = await loginResponse.json()
 
-        if (loginResponse.status === 200) {
-          // signIn(loginData.access_token)
-          console.log('Login successful:', loginData)
-        } else {
-          console.error('Login failed:', loginData)
-        }
-      } else {
-        console.error('Signup failed:', data)
-      }
+      //   if (loginResponse.status === 200) {
+      //     // signIn(loginData.access_token)
+      //     console.log('Login successful:', loginData)
+      //   } else {
+      //     console.error('Login failed:', loginData)
+      //   }
+      // } else {
+      //   console.error('Signup failed:', data)
+      // }
     } catch (error) {
       console.error('Error during signup or login:', error)
     }
-
-    // console.log('user:', user)
-    // console.log('token:', token)
 
     // Reset the form
     setFirstName('')

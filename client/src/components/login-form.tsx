@@ -1,14 +1,11 @@
+'use client'
 import React, { useState } from 'react'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import { Eye, EyeClosed } from 'lucide-react'
-// import { useAuth } from '@/context/jwtContext'
 import { useRouter } from 'next/navigation'
 import { io, Socket } from 'socket.io-client'
-import RadioButton from './radioButton'
-// import { useUserData } from '@/context/userDataContext'
-import * as RadioGroup from '@radix-ui/react-radio-group'
 
 export default function LoginForm() {
   const [showPassword, setShowPassword] = useState(false)
@@ -16,12 +13,8 @@ export default function LoginForm() {
   const [password, setPassword] = useState('')
   const [mode, setMode] = useState<'email' | 'mobile' | 'username'>('email')
   const [socket, setSocket] = useState<Socket | null>(null)
-  // const { setUserData } = useUserData()
 
-  // const { signIn } = useAuth()
   const router = useRouter()
-
-  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -34,29 +27,31 @@ export default function LoginForm() {
           body = {
             email: context,
             password: password,
+            mode: mode,
           }
           break
         case 'mobile':
           body = {
             phnum: context,
             password: password,
+            mode: mode,
           }
           break
         case 'username':
           body = {
             username: context,
             password: password,
+            mode: mode,
           }
           break
       }
 
-      console.log(body, mode)
-
-      const response = await fetch(`${backendUrl}/auth/login/${mode}`, {
+      const response = await fetch(`/api/auth/login/${mode}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify(body),
       })
 
@@ -65,44 +60,37 @@ export default function LoginForm() {
       }
 
       const data = await response.json()
-      console.log('Login response:', data)
+      // console.log('Login response:', data)
 
-      // Update JWT context with the token
-      // signIn(data.access_token)
-
-      // const CompleteUserData = await fetch(`${backendUrl}/user/${data.userId}`)
-      // const CompleteUserDataJson = await CompleteUserData.json()
-
-      // setUserData(CompleteUserDataJson)
-
-      // Reset form
       setContext('')
       setPassword('')
 
-      // Avoid connecting socket multiple times
-      if (!socket) {
-        const socketIo = io(`${backendUrl}/chat`, {
-          transports: ['websocket'], // Use WebSocket transport for real-time communication
-        })
+      // if (!socket) {
+      //   const socketIo = io(`${backendUrl}/chat`, {
+      //     transports: ['websocket'],
+      //   })
 
-        setSocket(socketIo)
+      //   setSocket(socketIo)
 
-        socketIo.on('connect', () => {
-          console.log('Connected to chat WebSocket server')
-        })
+      //   socketIo.on('connect', () => {
+      //     console.log('Connected to chat WebSocket server')
+      //   })
 
-        socketIo.on('join', (msg) => {
-          console.log(msg) // Display the user joining message
-        })
+      //   socketIo.on('join', (msg) => {
+      //     console.log(msg)
+      //   })
 
-        socketIo.emit('join', { userId: data.userId }) // Assuming `data.userId` is returned in the response
-      }
+      //   socketIo.emit('join', { userId: data.userId })
+      // }
 
-      // Redirect to the dashboard after successful login and WebSocket connection
-      router.push('/dashboard')
+      // router.push('/dashboard')
     } catch (error) {
       console.error('Login error:', error)
-      // Here you might want to show an error message to the user
+      if (error instanceof Error) {
+        alert(error.message)
+      } else {
+        alert('An unexpected error occurred. Please try again.')
+      }
     }
   }
 
@@ -133,16 +121,6 @@ export default function LoginForm() {
                 Username
               </label>
             </div>
-
-            {/* <RadioGroup.Root defaultValue="one" className="flex gap-4">
-              <RadioGroup.Item value="one" className="w-5 h-5 rounded-full border border-gray-400 flex items-center justify-center">
-                <RadioGroup.Indicator className="w-2.5 h-2.5 bg-black rounded-full" />
-              </RadioGroup.Item>
-
-              <RadioGroup.Item value="two" className="w-5 h-5 rounded-full border border-gray-400 flex items-center justify-center">
-                <RadioGroup.Indicator className="w-2.5 h-2.5 bg-black rounded-full" />
-              </RadioGroup.Item>
-            </RadioGroup.Root> */}
           </div>
         </div>
 
