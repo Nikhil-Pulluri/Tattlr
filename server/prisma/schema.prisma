@@ -1,0 +1,258 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+// 1. USER MODEL
+model User {
+  id             String     @id @default(auto()) @map("_id") @db.ObjectId
+  name           String
+  username       String     @unique
+  email          String     @unique
+  mobile         String     @unique
+  password       String
+  profilePicture String?
+  gender         Gender
+  isOnline       Boolean    @default(false)
+  lastSeen       DateTime   @default(now())
+  socketId       String?
+  status         UserStatus @default(AVAILABLE)
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  // Relations
+  sentMessages     Message[]
+  participants     ConversationParticipant[]
+  notifications    Notification[]
+  messageReactions MessageReaction[]
+  readReceipts     ReadReceipt[]
+
+  @@map("users")
+}
+
+enum Gender {
+  MALE
+  FEMALE
+}
+
+enum UserStatus {
+  AVAILABLE
+  AWAY
+  BUSY
+  INVISIBLE
+}
+
+// 2. CONVERSATION MODEL
+model Conversation {
+  id               String           @id @default(auto()) @map("_id") @db.ObjectId
+  type             ConversationType
+  name             String? // For group chats
+  description      String?
+  groupImage       String?
+  participantCount Int              @default(0)
+  messageCount     Int              @default(0)
+  isArchived       Boolean          @default(false)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  // Denormalized last message for performance
+  lastMessageId        String?      @db.ObjectId
+  lastMessageText      String?
+  lastMessageSender    String?      @db.ObjectId
+  lastMessageTimestamp DateTime?
+  lastMessageType      MessageType?
+
+  // Relations
+  messages      Message[]
+  participants  ConversationParticipant[]
+  notifications Notification[]
+
+  @@map("conversations")
+}
+
+enum ConversationType {
+  PRIVATE
+  GROUP
+}
+
+// 3. CONVERSATION PARTICIPANT MODEL (Junction table for many-to-many)
+model ConversationParticipant {
+  id                String          @id @default(auto()) @map("_id") @db.ObjectId
+  conversationId    String          @db.ObjectId
+  userId            String          @db.ObjectId
+  role              ParticipantRole @default(MEMBER)
+  joinedAt          DateTime        @default(now())
+  leftAt            DateTime?
+  isActive          Boolean         @default(true)
+  isMuted           Boolean         @default(false)
+  nickname          String? // Custom nickname in group chats
+  lastReadMessageId String?         @db.ObjectId
+  lastReadAt        DateTime?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  // Relations
+  conversation    Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lastReadMessage Message?     @relation("LastReadMessage", fields: [lastReadMessageId], references: [id])
+
+  @@unique([conversationId, userId])
+  @@map("conversation_participants")
+}
+
+enum ParticipantRole {
+  MEMBER
+  ADMIN
+  OWNER
+}
+
+// 4. MESSAGE MODEL
+model Message {
+  id             String        @id @default(auto()) @map("_id") @db.ObjectId
+  conversationId String        @db.ObjectId
+  senderId       String        @db.ObjectId
+  messageType    MessageType   @default(TEXT)
+  status         MessageStatus @default(SENT)
+  isDeleted      Boolean       @default(false)
+  deletedAt      DateTime?
+  isEdited       Boolean       @default(false)
+  editedAt       DateTime?
+  originalText   String?
+  replyToId      String?       @db.ObjectId
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  // Message content (embedded document approach)
+  content MessageContent?
+
+  // Relations
+  conversation  Conversation              @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender        User                      @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  replyTo       Message?                  @relation("MessageReply", fields: [replyToId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  replies       Message[]                 @relation("MessageReply")
+  reactions     MessageReaction[]
+  readReceipts  ReadReceipt[]
+  lastReadBy    ConversationParticipant[] @relation("LastReadMessage")
+  notifications Notification[]
+
+  @@map("messages")
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+  FILE
+  AUDIO
+  VIDEO
+  LOCATION
+  SYSTEM
+}
+
+enum MessageStatus {
+  SENT
+  DELIVERED
+  READ
+}
+
+// 5. MESSAGE CONTENT (Embedded in Message)
+type MessageContent {
+  // Text content
+  text String?
+
+  // Media content
+  mediaUrl String?
+  fileName String?
+  fileSize Int?
+  mimeType String?
+
+  // Location content
+  location LocationData?
+
+  // System message content
+  systemAction SystemAction?
+}
+
+type LocationData {
+  latitude  Float
+  longitude Float
+  address   String?
+}
+
+enum SystemAction {
+  USER_JOINED
+  USER_LEFT
+  USER_ADDED
+  USER_REMOVED
+  GROUP_CREATED
+  GROUP_RENAMED
+}
+
+// 6. MESSAGE REACTIONS
+model MessageReaction {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  messageId String   @db.ObjectId
+  userId    String   @db.ObjectId
+  emoji     String
+  createdAt DateTime @default(now())
+
+  // Relations
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId, emoji])
+  @@map("message_reactions")
+}
+
+// 7. READ RECEIPTS (Alternative approach to tracking read status)
+model ReadReceipt {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  messageId String   @db.ObjectId
+  userId    String   @db.ObjectId
+  readAt    DateTime @default(now())
+
+  // Relations
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId])
+  @@map("read_receipts")
+}
+
+// 8. NOTIFICATIONS
+model Notification {
+  id             String           @id @default(auto()) @map("_id") @db.ObjectId
+  userId         String           @db.ObjectId
+  type           NotificationType
+  title          String
+  body           String
+  isRead         Boolean          @default(false)
+  conversationId String?          @db.ObjectId
+  messageId      String?          @db.ObjectId
+  senderId       String?          @db.ObjectId
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  // Relations
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conversation Conversation? @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  message      Message?      @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
+enum NotificationType {
+  MESSAGE
+  FRIEND_REQUEST
+  GROUP_INVITE
+}
