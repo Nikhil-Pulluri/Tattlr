@@ -40,7 +40,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ chat, messages, onSendMessage }
 
   return (
     <div className="flex-1 flex flex-col bg-white dark:bg-neutral-800">
-      {/* Chat Header */}
       <div className="bg-white dark:bg-neutral-900 border-b border-gray-200 dark:border-neutral-700 p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
@@ -56,7 +55,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ chat, messages, onSendMessage }
         </div>
       </div>
 
-      {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50 dark:bg-neutral-800">
         {messages.map((msg) => (
           <div key={msg.id} className={`flex ${msg.sender === 'me' ? 'justify-end' : 'justify-start'}`}>
@@ -72,7 +70,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ chat, messages, onSendMessage }
         ))}
       </div>
 
-      {/* Message Input */}
       <div className="bg-white dark:bg-neutral-900 border-t border-gray-200 dark:border-neutral-700 p-4">
         <div className="flex items-center space-x-4">
           <div className="flex-1 relative">

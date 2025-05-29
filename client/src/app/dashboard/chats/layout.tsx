@@ -1,7 +1,7 @@
 import { Metadata } from 'next'
 import ChatLayout from '@/components/chat/chatLayout'
 
-const Metadata: Metadata = {
+export const metadata: Metadata = {
   title: 'Tattlr | Chats',
   description: 'Real Time Messaging',
 }

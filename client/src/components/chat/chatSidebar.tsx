@@ -17,7 +17,6 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({ chats, selectedChatId, onChat
 
   return (
     <div className="w-80 h-full flex flex-col bg-gray-100 border-r border-gray-200 dark:bg-neutral-800 dark:border-neutral-700">
-      {/* Header + Search */}
       <div className="p-4 border-b border-gray-200 dark:border-neutral-700">
         <h1 className="text-xl font-semibold text-gray-800 dark:text-white mb-3">Messages</h1>
         <div className="relative">
@@ -32,7 +31,6 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({ chats, selectedChatId, onChat
         </div>
       </div>
 
-      {/* Chat List */}
       <div className="flex-1 overflow-y-auto">
         {filteredChats.map((chat) => {
           const isSelected = selectedChatId === chat.id
