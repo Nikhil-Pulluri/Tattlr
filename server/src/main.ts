@@ -10,6 +10,6 @@ async function bootstrap() {
     allowedHeaders: 'Content-Type, Accept', 
   };
   app.enableCors(corsOptions);
-  await app.listen(process.env.PORT ?? 3000);
+  await app.listen(process.env.PORT ?? 8000);
 }
 bootstrap();
