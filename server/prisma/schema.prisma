@@ -58,7 +58,7 @@ model Conversation {
   id               String           @id @default(auto()) @map("_id") @db.ObjectId
   type             ConversationType
   name             String? // For group chats
-  description      String?
+  description      String?          @default("this is a tattlr group")
   groupImage       String?
   participantCount Int              @default(0)
   messageCount     Int              @default(0)
