@@ -27,26 +27,23 @@ export default function LoginForm() {
           body = {
             email: context,
             password: password,
-            mode: mode,
           }
           break
         case 'mobile':
           body = {
-            phnum: context,
+            mobile: context,
             password: password,
-            mode: mode,
           }
           break
         case 'username':
           body = {
             username: context,
             password: password,
-            mode: mode,
           }
           break
       }
 
-      const response = await fetch(`/api/auth/login/${mode}`, {
+      const response = await fetch(`/api/auth/login/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -60,7 +57,7 @@ export default function LoginForm() {
       }
 
       const data = await response.json()
-      // console.log('Login response:', data)
+      console.log('Login response:', data)
 
       setContext('')
       setPassword('')

@@ -4,22 +4,20 @@ import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(req: NextRequest) {
   const body = await req.json()
-  // const {mode} = useParams()
 
-  // console.log(`auth called ${mode}`)
+  const backendRes = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/login`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  })
 
-  // const backendRes = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/login/${mode}`, {
-  //   method: 'POST',
-  //   headers: {
-  //     'Content-Type': 'application/json',
-  //   },
-  //   body: JSON.stringify(body),
-  // })
-
-  // const data = await backendRes.json()
-  // if (!backendRes.ok) {
-  //   return NextResponse.json(data, { status: backendRes.status })
-  // }
+  const data = await backendRes.json()
+  console.log(data)
+  if (!backendRes.ok) {
+    return NextResponse.json(data, { status: backendRes.status })
+  }
   // const cookie = backendRes.headers.get('set-cookie')
 
   // const response = NextResponse.json(data, { status: backendRes.status })

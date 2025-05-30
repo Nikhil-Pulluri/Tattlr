@@ -49,7 +49,7 @@ export class AuthService {
           email : props.email,
           mobile : props.mobile,
           password : await this.passwordBcrypt(props.password),
-          profilePicture : props.profilePicture,
+          profilePicture : props.profilePicture || "",
           gender : handleGender(props.gender)
         }
       })
