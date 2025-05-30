@@ -169,7 +169,8 @@ export class ConversationService {
     try {
       const conversations = await this.prisma.conversation.findMany({
         include: {
-          participants: true
+          participants: true,
+          messages : true
         },
         where: {
           participants: {
