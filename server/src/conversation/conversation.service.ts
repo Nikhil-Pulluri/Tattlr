@@ -128,7 +128,7 @@ export class ConversationService {
     props : newParticipant
   ) : Promise<{status : string}> {
     try{
-      const valdation = await this.validateConversation(props.conversationId);
+      const valdation = await this.validateConversationType(props.conversationId);
       if(valdation.isGroup){
         const participant = await this.createParticipant({
           conversationId : props.conversationId,
@@ -218,7 +218,29 @@ export class ConversationService {
     }
   }
 
+
   async validateConversation(
+    conversationId : string,
+    userId : string
+  ) : Promise<boolean> {
+    const conversation = await this.prisma.conversation.findUnique(
+      {
+        where : {
+          id : conversationId,
+          participants : {
+             some : {
+               userId : userId,
+               isActive : true
+             }
+          }
+        }
+      }
+    )
+
+    if(conversation) return true
+    else return false
+  }
+  async validateConversationType(
     conversationId : string
   ) : Promise<{isGroup : boolean}> {
     if(conversationId){

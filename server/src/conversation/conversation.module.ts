@@ -6,6 +6,7 @@ import { MessageModule } from 'src/message/message.module';
 @Module({
   imports: [MessageModule],
   providers: [ConversationService],
-  controllers: [ConversationController]
+  controllers: [ConversationController],
+  exports : [ConversationService]
 })
 export class ConversationModule {}
