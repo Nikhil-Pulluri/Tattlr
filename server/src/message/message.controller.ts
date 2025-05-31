@@ -42,12 +42,4 @@ export class MessageController {
   ) : Promise<Message | null> {
     return await this.messageService.deleteMessage(body.messageId)
   }
-
-  @Public()
-  @Delete('deleteConversation')
-  async deleteConversation(
-    @Body() body : {conversationId : string}
-  ) : Promise<{status : string}> {
-    return await this.messageService.deleteMessagesByConversationId(body.conversationId)
-  }
 }

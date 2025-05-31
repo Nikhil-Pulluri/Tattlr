@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { ConversationType, Conversation, ParticipantRole, ConversationParticipant } from 'generated/prisma';
+import { MessageService } from 'src/message/message.service';
 
 
 export interface newConversation {
@@ -30,6 +31,7 @@ export interface decideConversation{
 export class ConversationService {
   constructor(
     private prisma : PrismaService,
+    private messageService : MessageService
   ){}
 
   async createConversation(
@@ -188,6 +190,31 @@ export class ConversationService {
     } catch (error) {
       console.log("error fetching user conversations", error);
       throw error;  
+    }
+  }
+
+
+  async deleteConversation(
+    conversationId : string
+  ) : Promise<{status : string}> {
+    try{
+      const deleteAllMsgsInConv = await this.messageService.deleteMessagesByConversationId(
+          conversationId
+      )
+
+      if(!deleteAllMsgsInConv) throw new Error("failed to delete messages in conversation")
+      const deleteConversation = await this.prisma.conversation.delete(
+        {
+          where : {
+            id : conversationId
+          }
+        }
+      )
+
+      if(deleteConversation) return {status : "conversation deleted successfully"}
+    }catch(error){
+      console.log("conversation deletion failed", error)
+      throw error
     }
   }
 

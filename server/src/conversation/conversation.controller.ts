@@ -1,6 +1,6 @@
 import { Controller } from '@nestjs/common';
 import { ConversationService } from './conversation.service';
-import {Post, Get, Body} from '@nestjs/common/decorators'
+import {Post, Get, Body, Delete} from '@nestjs/common/decorators'
 import { Public } from 'src/auth/public.decorator';
 import { decideConversation, newParticipant } from './conversation.service';
 import { Conversation } from 'generated/prisma';
@@ -33,6 +33,12 @@ export class ConversationController {
     @Body() body : {userId : string}
   ) : Promise<Conversation[]> {
     return await this.conversationService.getUserConversations(body.userId)
+  }
+
+  @Public()
+  @Delete('deleteConversation')
+  async deleteConversation(@Body() body : {conversationId : string}) : Promise<{status : string}> {
+    return await this.conversationService.deleteConversation(body.conversationId)
   }
 
 

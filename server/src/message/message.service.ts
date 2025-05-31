@@ -6,7 +6,7 @@ export interface newMessage{
   conversationId : string,
   senderId : string,
   messageType : MessageType,
-  contest : MessageContent,
+  content : MessageContent,
 }
 
 @Injectable()
@@ -25,7 +25,7 @@ export class MessageService {
           senderId : props.senderId,
           messageType : props.messageType,
           status : MessageStatus.SENT,
-          content : props.contest
+          content : props.content
         }
       })
 
