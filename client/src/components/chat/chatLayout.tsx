@@ -3,10 +3,20 @@ import React, { useState, useEffect } from 'react'
 import ChatSidebar from './chatSidebar'
 import ChatWindow from './chatWindow'
 import { Chat, Message } from '@/types/chat'
+// import { useUser } from '@/context/userContext'
+import { useUserStore } from '@/store/userStore'
+// import { useUser } from '@/context/userContext'
 
 const ChatLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
   const [selectedChatId, setSelectedChatId] = useState<number | null>(null)
   const [messages, setMessages] = useState<Message[]>([])
+  // const { user, userStatus } = useUser()
+  const { user, userStatus } = useUserStore()
+
+  useEffect(() => {
+    console.log(userStatus, 'from chat')
+    console.log(user, 'from chat')
+  }, [userStatus])
 
   const chats: Chat[] = [
     {

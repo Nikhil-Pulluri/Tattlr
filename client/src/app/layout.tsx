@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { JetBrains_Mono } from 'next/font/google'
 import './globals.css'
 import '@radix-ui/themes/styles.css'
-import { UserProvider } from '@/context/userContext'
+// import { UserProvider } from '@/context/userContext'
 
 const jetBrainsMono = JetBrains_Mono({
   subsets: ['latin'],
@@ -23,7 +23,8 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${jetBrainsMono.className} dark antialiased`}>
-        <UserProvider>{children}</UserProvider>
+        {/* <UserProvider>{children}</UserProvider> */}
+        {children}
       </body>
     </html>
   )

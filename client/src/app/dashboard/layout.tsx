@@ -4,6 +4,8 @@ import { Sidebar, SidebarBody, SidebarLink } from '@/components/ui/sidebar'
 import { IconArrowLeft, IconBrandTabler, IconSettings, IconUserBolt } from '@tabler/icons-react'
 import { motion } from 'motion/react'
 import { cn } from '@/lib/utils'
+import { useUserStore } from '@/store/userStore'
+import { useRouter } from 'next/navigation'
 
 export default function DashboardLayout({
   children,
@@ -11,6 +13,8 @@ export default function DashboardLayout({
   children: React.ReactNode
 }>) {
   const [open, setOpen] = useState(false)
+  const { logout } = useUserStore()
+  const router = useRouter()
 
   const links = [
     {
@@ -42,9 +46,20 @@ export default function DashboardLayout({
           <div className="flex flex-1 flex-col overflow-x-hidden overflow-y-auto">
             {open ? <Logo /> : <LogoIcon />}
             <div className="mt-8 flex flex-col gap-2">
-              {links.map((link, idx) => (
-                <SidebarLink key={idx} link={link} />
-              ))}
+              {links.map((link, idx) => {
+                if (link.label === 'Logout') return null // exclude logout
+
+                return <SidebarLink key={idx} link={link} />
+              })}
+              <div
+                onClick={(e) => {
+                  e.preventDefault()
+                  logout()
+                  router.push('/')
+                }}
+              >
+                <SidebarLink link={links.find((link) => link.label === 'Logout')!} />
+              </div>
             </div>
           </div>
           <div>

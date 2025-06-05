@@ -4,8 +4,10 @@ import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import { Eye, EyeClosed } from 'lucide-react'
-import { useUser } from '@/context/userContext'
+import { useUserStore } from '@/store/userStore'
+// import { useUser } from '@/context/userContext'
 import { useRouter } from 'next/navigation'
+// import { useUser } from '@/context/userContext'
 export default function SignupForm() {
   const [showPassword, setShowPassword] = useState(false)
   const [firstName, setFirstName] = useState('')
@@ -19,7 +21,8 @@ export default function SignupForm() {
   const [profilePicture, setProfilePicture] = useState<File | null>(null)
   const [passwordError, setPasswordError] = useState<string | null>(null)
   const router = useRouter()
-  const { setUser, userStatus } = useUser()
+  // const { setUser, userStatus } = useUser()
+  const { setUser, userStatus } = useUserStore()
 
   useEffect(() => {
     if (userStatus) router.push('dashboard/chats')

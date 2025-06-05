@@ -5,7 +5,8 @@ import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import { Eye, EyeClosed } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { useUser } from '@/context/userContext'
+import { useUserStore } from '@/store/userStore'
+// import { useUser } from '@/context/userContext'
 // import { io, Socket } from 'socket.io-client'
 
 export default function LoginForm() {
@@ -15,13 +16,16 @@ export default function LoginForm() {
   const [mode, setMode] = useState<'email' | 'mobile' | 'username'>('email')
   // const [socket, setSocket] = useState<Socket | null>(null)
 
-  const { setUser, userStatus } = useUser()
+  // const { setUser, userStatus } = useUser()
+  const { setUser, userStatus } = useUserStore()
 
   const router = useRouter()
   const backend = process.env.NEXT_PUBLIC_BACKEND_URL
 
   useEffect(() => {
     if (userStatus) router.push('dashboard/chats')
+    console.log(userStatus, 'from login')
+    // console.log(user)
   }, [userStatus])
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
