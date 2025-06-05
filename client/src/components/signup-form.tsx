@@ -1,10 +1,11 @@
 'use client'
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import { Eye, EyeClosed } from 'lucide-react'
-
+import { useUser } from '@/context/userContext'
+import { useRouter } from 'next/navigation'
 export default function SignupForm() {
   const [showPassword, setShowPassword] = useState(false)
   const [firstName, setFirstName] = useState('')
@@ -17,6 +18,12 @@ export default function SignupForm() {
   const [gender, setGender] = useState('')
   const [profilePicture, setProfilePicture] = useState<File | null>(null)
   const [passwordError, setPasswordError] = useState<string | null>(null)
+  const router = useRouter()
+  const { setUser, userStatus } = useUser()
+
+  useEffect(() => {
+    if (userStatus) router.push('dashboard/chats')
+  }, [userStatus])
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -71,7 +78,29 @@ export default function SignupForm() {
       })
 
       const data = await response.json()
-      console.log(data)
+      if (data.message === 'success') {
+        var loginBody = {
+          email: email,
+          password: password,
+        }
+        try {
+          const loginResponse = await fetch('api/auth/login', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(loginBody),
+          })
+
+          const loginData = await loginResponse.json()
+          if (loginData.status === 'success') {
+            setUser(loginData.user)
+          }
+        } catch (error) {
+          console.log(error)
+          throw error
+        }
+      }
     } catch (error) {
       console.error('Error during signup or login:', error)
     }

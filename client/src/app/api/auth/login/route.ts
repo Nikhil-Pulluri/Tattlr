@@ -31,6 +31,7 @@ export async function POST(req: NextRequest) {
   // console.log("called ", body) // success
 
   return NextResponse.json({
-    "status": "success"
+    "status": "success",
+    "user" : data.user
   })
 }

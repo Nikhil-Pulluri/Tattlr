@@ -1,5 +1,4 @@
 'use client'
-
 import React, { useState, useEffect } from 'react'
 import ChatSidebar from './chatSidebar'
 import ChatWindow from './chatWindow'

@@ -1,20 +1,28 @@
 'use client'
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import { Eye, EyeClosed } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { io, Socket } from 'socket.io-client'
+import { useUser } from '@/context/userContext'
+// import { io, Socket } from 'socket.io-client'
 
 export default function LoginForm() {
   const [showPassword, setShowPassword] = useState(false)
   const [context, setContext] = useState('')
   const [password, setPassword] = useState('')
   const [mode, setMode] = useState<'email' | 'mobile' | 'username'>('email')
-  const [socket, setSocket] = useState<Socket | null>(null)
+  // const [socket, setSocket] = useState<Socket | null>(null)
+
+  const { setUser, userStatus } = useUser()
 
   const router = useRouter()
+  const backend = process.env.NEXT_PUBLIC_BACKEND_URL
+
+  useEffect(() => {
+    if (userStatus) router.push('dashboard/chats')
+  }, [userStatus])
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -57,10 +65,15 @@ export default function LoginForm() {
       }
 
       const data = await response.json()
-      console.log('Login response:', data)
 
       setContext('')
       setPassword('')
+
+      if (data.status === 'success') {
+        const userDetails = data.user
+
+        setUser(userDetails)
+      }
 
       // if (!socket) {
       //   const socketIo = io(`${backendUrl}/chat`, {

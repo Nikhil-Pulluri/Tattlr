@@ -1,8 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import * as bcrypt from 'bcrypt'
-import { Gender } from 'generated/prisma';
+import { Gender, Prisma } from 'generated/prisma';
 import { JwtService } from '@nestjs/jwt/dist';
+import {User as PrismaUser} from 'generated/prisma'
 
 export interface User {
   name : string,
@@ -62,8 +63,26 @@ export class AuthService {
     }
   }
 
+  async getUser(
+    id : string
+  ) : Promise<PrismaUser> {
+    try{
+      const user = await this.prisma.user.findUnique(
+        {
+          where : {
+            id : id
+          }
+        }
+      )
+      return user;
+    }catch(error){
+      console.log(error)
+      throw error
+    }
+  }
 
-  async validateUser(props : Credentials) : Promise<{access_token : string}> {
+
+  async validateUser(props : Credentials) : Promise<{access_token : string, user : PrismaUser}> {
 
     try{
       const user = await this.prisma.user.findFirst(
@@ -86,17 +105,10 @@ export class AuthService {
         const payload = { username: user.username, sub: user.id };
         return {
           access_token: this.jwtService.sign(payload),
+          user : user
         };
       }
-      // return passwordMatch ? (
-      //     {
-      //       status : "success"
-      //     }
-      //   ) : (
-      //     {
-      //       status : "failed"
-      //     }
-      //   )
+
     }
 
     }catch(error){
