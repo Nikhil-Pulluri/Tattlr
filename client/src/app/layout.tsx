@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { JetBrains_Mono } from 'next/font/google'
 import './globals.css'
 import '@radix-ui/themes/styles.css'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import ReactQueryProvider from '@/providers/reactQueryProvider'
 
 const jetBrainsMono = JetBrains_Mono({
   subsets: ['latin'],
@@ -23,7 +23,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${jetBrainsMono.className} dark antialiased`}>
-        <QueryClientProvider client={new QueryClient()}>{children}</QueryClientProvider>
+        <ReactQueryProvider>{children}</ReactQueryProvider>
       </body>
     </html>
   )

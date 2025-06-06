@@ -28,7 +28,7 @@ export class ConversationController {
   }
 
   @Public()
-  @Get('getUserConversations')
+  @Post('getUserConversations')
   async getUserConversations(
     @Body() body : {userId : string}
   ) : Promise<Conversation[]> {
