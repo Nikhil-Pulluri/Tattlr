@@ -20,7 +20,7 @@ export class MessageController {
   }
 
   @Public()
-  @Get('getMessagesByConversationId')
+  @Post('getMessagesByConversationId')
   async getMessagesByConversationId(
     @Body() body : {conversationId : string}
   ) : Promise<Message[]> {

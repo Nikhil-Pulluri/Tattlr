@@ -82,14 +82,14 @@ interface ChatSidebarProps {
 const ChatSidebar: React.FC<ChatSidebarProps> = ({ conversations, selectedConversationId, onConversationSelect }) => {
   const [searchTerm, setSearchTerm] = useState('')
 
-  console.log('side', conversations)
+  // console.log('side', conversations)
 
   const filteredConversations = conversations.filter((conversation) => (conversation.name || '').toLowerCase().includes(searchTerm.toLowerCase()))
 
   const formatTime = (timestamp?: string) => {
     if (!timestamp) return ''
     const now = new Date()
-    const messageDate = new Date(timestamp) // Convert ISO string to Date
+    const messageDate = new Date(timestamp)
     const diffMs = now.getTime() - messageDate.getTime()
     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
 

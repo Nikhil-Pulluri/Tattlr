@@ -1,20 +1,19 @@
 'use client'
-
 import React, { useState } from 'react'
 import { Send, MoreVertical } from 'lucide-react'
 
-interface User {
-  id: string
-  name: string
-  username: string
-  email: string
-  mobile: string
-  profilePicture?: string
-  gender: 'MALE' | 'FEMALE'
-  isOnline: boolean
-  lastSeen: string // Changed from Date to string
-  status: 'AVAILABLE' | 'AWAY' | 'BUSY' | 'INVISIBLE'
-}
+// interface User {
+//   id: string
+//   name: string
+//   username: string
+//   email: string
+//   mobile: string
+//   profilePicture?: string
+//   gender: 'MALE' | 'FEMALE'
+//   isOnline: boolean
+//   lastSeen: string
+//   status: 'AVAILABLE' | 'AWAY' | 'BUSY' | 'INVISIBLE'
+// }
 
 interface Conversation {
   id: string
@@ -59,19 +58,19 @@ interface Message {
   updatedAt: string // Changed from Date to string
 }
 
-interface ConversationParticipant {
-  id: string
-  conversationId: string
-  userId: string
-  role: 'MEMBER' | 'ADMIN' | 'OWNER'
-  joinedAt: string // Changed from Date to string
-  leftAt?: string // Changed from Date to string
-  isActive: boolean
-  isMuted: boolean
-  nickname?: string
-  lastReadMessageId?: string
-  lastReadAt?: string // Changed from Date to string
-}
+// interface ConversationParticipant {
+//   id: string
+//   conversationId: string
+//   userId: string
+//   role: 'MEMBER' | 'ADMIN' | 'OWNER'
+//   joinedAt: string // Changed from Date to string
+//   leftAt?: string // Changed from Date to string
+//   isActive: boolean
+//   isMuted: boolean
+//   nickname?: string
+//   lastReadMessageId?: string
+//   lastReadAt?: string // Changed from Date to string
+// }
 
 interface ChatWindowProps {
   conversation: Conversation | null

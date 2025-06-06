@@ -3,24 +3,8 @@ import React, { useState, useEffect } from 'react'
 import ChatSidebar from './chatSidebar'
 import ChatWindow from './chatWindow'
 import { useUserStore } from '@/store/userStore'
-import { useQuery } from '@tanstack/react-query'
-
-interface Conversation {
-  id: string
-  type: 'PRIVATE' | 'GROUP'
-  name?: string
-  description?: string
-  groupImage?: string
-  participantCount: number
-  messageCount: number
-  isArchived: boolean
-  lastMessageText?: string
-  lastMessageSender?: string
-  lastMessageTimestamp?: string
-  lastMessageType?: 'TEXT' | 'IMAGE' | 'FILE' | 'AUDIO' | 'VIDEO' | 'LOCATION' | 'SYSTEM'
-  createdAt: string
-  updatedAt: string
-}
+import { useUserMessagesMap } from '@/hooks/getUserMessagesMap'
+import { useUserConversations } from '@/hooks/getUserConversations'
 
 interface Message {
   id: string
@@ -48,49 +32,6 @@ interface Message {
   updatedAt: string
 }
 
-async function fetchConversations(userId: string): Promise<Conversation[]> {
-  const backend = process.env.NEXT_PUBLIC_BACKEND_URL
-  const conversations = await fetch(`${backend}/conversation/getUserConversations`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ userId: userId }),
-  })
-
-  if (!conversations.ok) console.log('error fetching conversations', conversations.json())
-
-  // console.log('conversations:', conversations.json())
-
-  const data = await conversations.json()
-  // console.log('conversations', data)
-  return data
-}
-
-export function useUserConversations(userId: string | undefined) {
-  return useQuery({
-    queryKey: ['conversations', userId],
-    queryFn: () => fetchConversations(userId!),
-    enabled: !!userId,
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: false,
-    staleTime: 1000 * 60 * 5,
-  })
-}
-
-async function fetchMessages(conversationId: string): Promise<Message[]> {
-  const backend = process.env.NEXT_PUBLIC_BACKEND_URL
-  const messages = await fetch(`${backend}/message/getMessagesByConversationId`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ conversationId: conversationId }),
-  })
-
-  return messages.json()
-}
-
 const ChatLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null)
   const [messages, setMessages] = useState<Message[]>([])
@@ -101,91 +42,21 @@ const ChatLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
     setIsClient(true)
   }, [])
 
-  // useEffect(() => {
-  //   console.log(userStatus, 'from chat')
-  //   console.log(user, 'from chat')
-  // }, [userStatus])
-
   const { data: conversations = [], isLoading, isError, error } = useUserConversations(user?.id)
 
-  useEffect(() => {
-    console.log(conversations)
-  }, [conversations])
+  const conversationIds = conversations.map((conv) => conv.id)
 
-  const messagesByConversation: { [key: string]: Message[] } = {
-    '675a1b2c3d4e5f6789012345': [
-      {
-        id: '675a1b2c3d4e5f6789012350',
-        conversationId: '675a1b2c3d4e5f6789012345',
-        senderId: '675a1b2c3d4e5f6789012346',
-        messageType: 'TEXT',
-        status: 'READ',
-        isDeleted: false,
-        isEdited: false,
-        content: { text: 'Hey! How are you doing today?' },
-        createdAt: '2024-06-05T14:28:00Z',
-        updatedAt: '2024-06-05T14:28:00Z',
-      },
-      {
-        id: '675a1b2c3d4e5f6789012351',
-        conversationId: '675a1b2c3d4e5f6789012345',
-        senderId: user?.id || 'current-user-id',
-        messageType: 'TEXT',
-        status: 'READ',
-        isDeleted: false,
-        isEdited: false,
-        content: { text: "I'm doing great, thanks for asking! How about you?" },
-        createdAt: '2024-06-05T14:29:00Z',
-        updatedAt: '2024-06-05T14:29:00Z',
-      },
-      {
-        id: '675a1b2c3d4e5f6789012352',
-        conversationId: '675a1b2c3d4e5f6789012345',
-        senderId: '675a1b2c3d4e5f6789012346',
-        messageType: 'TEXT',
-        status: 'READ',
-        isDeleted: false,
-        isEdited: false,
-        content: { text: 'Pretty good! Just working on some new projects' },
-        createdAt: '2024-06-05T14:30:00Z',
-        updatedAt: '2024-06-05T14:30:00Z',
-      },
-    ],
-    '675a1b2c3d4e5f6789012347': [
-      {
-        id: '675a1b2c3d4e5f6789012353',
-        conversationId: '675a1b2c3d4e5f6789012347',
-        senderId: '675a1b2c3d4e5f6789012348',
-        messageType: 'TEXT',
-        status: 'READ',
-        isDeleted: false,
-        isEdited: false,
-        content: { text: 'The new feature is ready for testing' },
-        createdAt: '2024-06-05T13:14:00Z',
-        updatedAt: '2024-06-05T13:14:00Z',
-      },
-      {
-        id: '675a1b2c3d4e5f6789012354',
-        conversationId: '675a1b2c3d4e5f6789012347',
-        senderId: user?.id || 'current-user-id',
-        messageType: 'TEXT',
-        status: 'READ',
-        isDeleted: false,
-        isEdited: false,
-        content: { text: "Great! I'll check it out now" },
-        createdAt: '2024-06-05T13:15:00Z',
-        updatedAt: '2024-06-05T13:15:00Z',
-      },
-    ],
-  }
+  const { data: messagesMap = {}, isLoading: messagesLoading } = useUserMessagesMap(conversationIds)
+
+  // console.log('chatLayout messages', messagesMap)
 
   const selectedConversation = conversations.find((conv) => conv.id === selectedConversationId) || null
 
   useEffect(() => {
     if (selectedConversationId) {
-      setMessages(messagesByConversation[selectedConversationId] || [])
+      setMessages(messagesMap[selectedConversationId] || [])
     }
-  }, [selectedConversationId])
+  }, [selectedConversationId, messagesMap])
 
   const handleConversationSelect = (conversationId: string): void => {
     setSelectedConversationId(conversationId)
@@ -234,6 +105,7 @@ const ChatLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
 
 export default ChatLayout
 
+// dummy for testing
 // const conversations: Conversation[] = [
 //   {
 //     id: '675a1b2c3d4e5f6789012345',
@@ -308,3 +180,70 @@ export default ChatLayout
 //     updatedAt: '2024-06-04T16:00:00Z',
 //   },
 // ]
+
+// const messagesByConversation: { [key: string]: Message[] } = {
+//   '675a1b2c3d4e5f6789012345': [
+//     {
+//       id: '675a1b2c3d4e5f6789012350',
+//       conversationId: '675a1b2c3d4e5f6789012345',
+//       senderId: '675a1b2c3d4e5f6789012346',
+//       messageType: 'TEXT',
+//       status: 'READ',
+//       isDeleted: false,
+//       isEdited: false,
+//       content: { text: 'Hey! How are you doing today?' },
+//       createdAt: '2024-06-05T14:28:00Z',
+//       updatedAt: '2024-06-05T14:28:00Z',
+//     },
+//     {
+//       id: '675a1b2c3d4e5f6789012351',
+//       conversationId: '675a1b2c3d4e5f6789012345',
+//       senderId: user?.id || 'current-user-id',
+//       messageType: 'TEXT',
+//       status: 'READ',
+//       isDeleted: false,
+//       isEdited: false,
+//       content: { text: "I'm doing great, thanks for asking! How about you?" },
+//       createdAt: '2024-06-05T14:29:00Z',
+//       updatedAt: '2024-06-05T14:29:00Z',
+//     },
+//     {
+//       id: '675a1b2c3d4e5f6789012352',
+//       conversationId: '675a1b2c3d4e5f6789012345',
+//       senderId: '675a1b2c3d4e5f6789012346',
+//       messageType: 'TEXT',
+//       status: 'READ',
+//       isDeleted: false,
+//       isEdited: false,
+//       content: { text: 'Pretty good! Just working on some new projects' },
+//       createdAt: '2024-06-05T14:30:00Z',
+//       updatedAt: '2024-06-05T14:30:00Z',
+//     },
+//   ],
+//   '675a1b2c3d4e5f6789012347': [
+//     {
+//       id: '675a1b2c3d4e5f6789012353',
+//       conversationId: '675a1b2c3d4e5f6789012347',
+//       senderId: '675a1b2c3d4e5f6789012348',
+//       messageType: 'TEXT',
+//       status: 'READ',
+//       isDeleted: false,
+//       isEdited: false,
+//       content: { text: 'The new feature is ready for testing' },
+//       createdAt: '2024-06-05T13:14:00Z',
+//       updatedAt: '2024-06-05T13:14:00Z',
+//     },
+//     {
+//       id: '675a1b2c3d4e5f6789012354',
+//       conversationId: '675a1b2c3d4e5f6789012347',
+//       senderId: user?.id || 'current-user-id',
+//       messageType: 'TEXT',
+//       status: 'READ',
+//       isDeleted: false,
+//       isEdited: false,
+//       content: { text: "Great! I'll check it out now" },
+//       createdAt: '2024-06-05T13:15:00Z',
+//       updatedAt: '2024-06-05T13:15:00Z',
+//     },
+//   ],
+// }

@@ -17,7 +17,7 @@ export default function LoginForm() {
   // const [socket, setSocket] = useState<Socket | null>(null)
 
   // const { setUser, userStatus } = useUser()
-  const { setUser, userStatus } = useUserStore()
+  const { setUser, userStatus, connectSocket } = useUserStore()
 
   const router = useRouter()
   const backend = process.env.NEXT_PUBLIC_BACKEND_URL
@@ -75,8 +75,8 @@ export default function LoginForm() {
 
       if (data.status === 'success') {
         const userDetails = data.user
-
         setUser(userDetails)
+        useUserStore.getState().connectSocket()
       }
 
       // if (!socket) {
