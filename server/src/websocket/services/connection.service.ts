@@ -27,8 +27,9 @@ export class ConnectionService {
     if (!this.roomUsers.has(roomId)) {
       this.roomUsers.set(roomId, new Set());
     }
-    console.log(this.roomUsers[roomId])
+    // console.log(this.roomUsers[roomId])
     this.roomUsers.get(roomId).add(userId);
+    // console.log(this.roomUsers)
   }
 
   removeUserFromRoom(userId: string, roomId: string) {

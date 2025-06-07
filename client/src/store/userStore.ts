@@ -3,6 +3,7 @@
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import { io, Socket } from 'socket.io-client'
+import { useEffect } from 'react'
 
 type Gender = 'MALE' | 'FEMALE'
 type UserStatus = 'AVAILABLE' | 'AWAY' | 'BUSY' | 'INVISIBLE'
@@ -38,6 +39,8 @@ interface UserStore {
   connectSocket: () => void
   disconnectSocket: () => void
 }
+
+
 
 export const useUserStore = create<UserStore>()(
   persist(

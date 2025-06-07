@@ -30,6 +30,8 @@ export class RoomGateway {
       if(temp){
         client.join(data.conversationId);
         this.connectionService.addUserToRoom(data.userId, data.conversationId);
+
+        // console.log("joined room", data.conversationId, data.userId)
         
         const onlineUsers = this.connectionService.getRoomUsers(data.conversationId);
         

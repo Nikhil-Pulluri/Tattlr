@@ -35,6 +35,7 @@ export class MainGateway implements OnGatewayConnection, OnGatewayDisconnect {
    */
   emitToRoom(roomId: string, event: string, payload: any): void {
     this.server.to(roomId).emit(event, payload);
+    // client.broadcast.to(roomId).emit(event, payload);
   }
 
   /**

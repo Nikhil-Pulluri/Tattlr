@@ -1,5 +1,5 @@
 'use client'
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Sidebar, SidebarBody, SidebarLink } from '@/components/ui/sidebar'
 import { IconArrowLeft, IconBrandTabler, IconSettings, IconUserBolt } from '@tabler/icons-react'
 import { motion } from 'motion/react'
@@ -14,7 +14,15 @@ export default function DashboardLayout({
 }>) {
   const [open, setOpen] = useState(false)
   const { logout } = useUserStore()
+  const user = useUserStore((state) => state.user)
+  const connectSocket = useUserStore((state) => state.connectSocket)
   const router = useRouter()
+
+  useEffect(() => {
+    if (user) {
+      connectSocket()
+    }
+  }, [user])
 
   const links = [
     {

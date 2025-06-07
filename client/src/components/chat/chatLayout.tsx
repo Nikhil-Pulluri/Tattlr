@@ -5,6 +5,7 @@ import ChatWindow from './chatWindow'
 import { useUserStore } from '@/store/userStore'
 import { useUserMessagesMap } from '@/hooks/getUserMessagesMap'
 import { useUserConversations } from '@/hooks/getUserConversations'
+import { useQueryClient } from '@tanstack/react-query'
 
 interface Message {
   id: string
@@ -38,6 +39,10 @@ const ChatLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
   const [isClient, setIsClient] = useState(false)
   const { user, userStatus } = useUserStore()
 
+  const socketConnection = useUserStore((state) => state.socket)
+
+  const queryClient = useQueryClient()
+
   useEffect(() => {
     setIsClient(true)
   }, [])
@@ -48,13 +53,67 @@ const ChatLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
 
   const { data: messagesMap = {}, isLoading: messagesLoading } = useUserMessagesMap(conversationIds)
 
-  // console.log('chatLayout messages', messagesMap)
+  useEffect(() => {
+    if (socketConnection && user?.id && conversationIds.length > 0) {
+      console.log(conversationIds.length)
+      conversationIds.forEach((conversationId) => {
+        socketConnection.emit('joinRoom', {
+          conversationId,
+          userId: user.id,
+        })
+      })
+    }
+  }, [socketConnection, user?.id, conversationIds])
+
+  const sortMessages = (messages: Message[]): Message[] => {
+    return [...messages].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+  }
+
+  useEffect(() => {
+    const handler = (message: Message) => {
+      if (message.senderId !== user?.id) {
+        console.log('message received', message)
+
+        // ✅ Update query cache safely
+        queryClient.setQueryData<{ [conversationId: string]: Message[] }>(['messagesMap', conversationIds], (oldData) => {
+          if (!oldData) return {}
+
+          const existingMessages = oldData[message.conversationId] || []
+
+          // Check if message already exists to prevent duplicates
+          const messageExists = existingMessages.some((msg) => msg.id === message.id)
+          if (messageExists) {
+            return oldData
+          }
+
+          const updatedMessages = sortMessages([...existingMessages, message])
+
+          console.log('updatedMessages', updatedMessages)
+
+          return {
+            ...oldData,
+            [message.conversationId]: updatedMessages,
+          }
+        })
+      }
+    }
+
+    socketConnection?.on('newMessage', handler)
+
+    return () => {
+      socketConnection?.off('newMessage', handler)
+    }
+  }, [socketConnection, user?.id, conversationIds, queryClient])
 
   const selectedConversation = conversations.find((conv) => conv.id === selectedConversationId) || null
 
+  // Update messages from query cache, ensuring they're sorted
   useEffect(() => {
-    if (selectedConversationId) {
-      setMessages(messagesMap[selectedConversationId] || [])
+    if (selectedConversationId && messagesMap[selectedConversationId]) {
+      const sortedMessages = sortMessages(messagesMap[selectedConversationId])
+      setMessages(sortedMessages)
+    } else if (selectedConversationId) {
+      setMessages([])
     }
   }, [selectedConversationId, messagesMap])
 
@@ -65,7 +124,7 @@ const ChatLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
   const handleSendMessage = (messageText: string): void => {
     if (selectedConversationId && user) {
       const newMessage: Message = {
-        id: `msg_${Date.now()}`,
+        id: `msg_${Date.now()}_${Math.random()}`, // More unique ID generation
         conversationId: selectedConversationId,
         senderId: user.id,
         messageType: 'TEXT',
@@ -76,7 +135,51 @@ const ChatLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       }
-      setMessages((prev) => [...prev, newMessage])
+
+      // Update local state immediately for better UX
+      setMessages((prev) => sortMessages([...prev, newMessage]))
+
+      // Update query cache immediately
+      queryClient.setQueryData<{ [conversationId: string]: Message[] }>(['messagesMap', conversationIds], (oldData) => {
+        if (!oldData) return { [selectedConversationId]: [newMessage] }
+
+        const existingMessages = oldData[selectedConversationId] || []
+        const updatedMessages = sortMessages([...existingMessages, newMessage])
+
+        return {
+          ...oldData,
+          [selectedConversationId]: updatedMessages,
+        }
+      })
+
+      try {
+        socketConnection?.emit('sendMessage', {
+          conversationId: selectedConversationId,
+          senderId: user.id,
+          messageType: 'TEXT',
+          content: {
+            text: messageText,
+          },
+        })
+      } catch (error) {
+        console.log('error sending message via socket', error)
+
+        // Rollback on error
+        setMessages((prev) => prev.filter((msg) => msg.id !== newMessage.id))
+        queryClient.setQueryData<{ [conversationId: string]: Message[] }>(['messagesMap', conversationIds], (oldData) => {
+          if (!oldData) return {}
+
+          const existingMessages = oldData[selectedConversationId] || []
+          const rolledBackMessages = existingMessages.filter((msg) => msg.id !== newMessage.id)
+
+          return {
+            ...oldData,
+            [selectedConversationId]: rolledBackMessages,
+          }
+        })
+
+        throw error
+      }
     }
   }
 
@@ -104,146 +207,3 @@ const ChatLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
 }
 
 export default ChatLayout
-
-// dummy for testing
-// const conversations: Conversation[] = [
-//   {
-//     id: '675a1b2c3d4e5f6789012345',
-//     type: 'PRIVATE',
-//     name: 'Alice Johnson',
-//     participantCount: 2,
-//     messageCount: 15,
-//     isArchived: false,
-//     lastMessageText: 'Hey! How are you doing today?',
-//     lastMessageSender: '675a1b2c3d4e5f6789012346',
-//     lastMessageTimestamp: '2024-06-05T14:30:00Z',
-//     lastMessageType: 'TEXT',
-//     createdAt: '2024-06-01T10:00:00Z',
-//     updatedAt: '2024-06-05T14:30:00Z',
-//   },
-//   {
-//     id: '675a1b2c3d4e5f6789012347',
-//     type: 'GROUP',
-//     name: 'Development Team',
-//     description: 'Development team discussions',
-//     participantCount: 5,
-//     messageCount: 42,
-//     isArchived: false,
-//     lastMessageText: 'The new feature is ready for testing',
-//     lastMessageSender: '675a1b2c3d4e5f6789012348',
-//     lastMessageTimestamp: '2024-06-05T13:15:00Z',
-//     lastMessageType: 'TEXT',
-//     createdAt: '2024-05-20T09:00:00Z',
-//     updatedAt: '2024-06-05T13:15:00Z',
-//   },
-//   {
-//     id: '675a1b2c3d4e5f6789012349',
-//     type: 'PRIVATE',
-//     name: 'Sarah Miller',
-//     participantCount: 2,
-//     messageCount: 8,
-//     isArchived: false,
-//     lastMessageText: 'Thanks for the help with the project!',
-//     lastMessageSender: '675a1b2c3d4e5f678901234a',
-//     lastMessageTimestamp: '2024-06-05T12:45:00Z',
-//     lastMessageType: 'TEXT',
-//     createdAt: '2024-06-03T11:00:00Z',
-//     updatedAt: '2024-06-05T12:45:00Z',
-//   },
-//   {
-//     id: '675a1b2c3d4e5f678901234b',
-//     type: 'GROUP',
-//     name: 'Marketing Group',
-//     description: 'Marketing team coordination',
-//     participantCount: 4,
-//     messageCount: 23,
-//     isArchived: false,
-//     lastMessageText: 'Campaign results look promising',
-//     lastMessageSender: '675a1b2c3d4e5f678901234c',
-//     lastMessageTimestamp: '2024-06-05T11:30:00Z',
-//     lastMessageType: 'TEXT',
-//     createdAt: '2024-05-15T14:00:00Z',
-//     updatedAt: '2024-06-05T11:30:00Z',
-//   },
-//   {
-//     id: '675a1b2c3d4e5f678901234d',
-//     type: 'PRIVATE',
-//     name: 'Mike Chen',
-//     participantCount: 2,
-//     messageCount: 12,
-//     isArchived: false,
-//     lastMessageText: "Let's schedule that meeting",
-//     lastMessageSender: '675a1b2c3d4e5f678901234e',
-//     lastMessageTimestamp: '2024-06-04T16:00:00Z',
-//     lastMessageType: 'TEXT',
-//     createdAt: '2024-06-02T08:30:00Z',
-//     updatedAt: '2024-06-04T16:00:00Z',
-//   },
-// ]
-
-// const messagesByConversation: { [key: string]: Message[] } = {
-//   '675a1b2c3d4e5f6789012345': [
-//     {
-//       id: '675a1b2c3d4e5f6789012350',
-//       conversationId: '675a1b2c3d4e5f6789012345',
-//       senderId: '675a1b2c3d4e5f6789012346',
-//       messageType: 'TEXT',
-//       status: 'READ',
-//       isDeleted: false,
-//       isEdited: false,
-//       content: { text: 'Hey! How are you doing today?' },
-//       createdAt: '2024-06-05T14:28:00Z',
-//       updatedAt: '2024-06-05T14:28:00Z',
-//     },
-//     {
-//       id: '675a1b2c3d4e5f6789012351',
-//       conversationId: '675a1b2c3d4e5f6789012345',
-//       senderId: user?.id || 'current-user-id',
-//       messageType: 'TEXT',
-//       status: 'READ',
-//       isDeleted: false,
-//       isEdited: false,
-//       content: { text: "I'm doing great, thanks for asking! How about you?" },
-//       createdAt: '2024-06-05T14:29:00Z',
-//       updatedAt: '2024-06-05T14:29:00Z',
-//     },
-//     {
-//       id: '675a1b2c3d4e5f6789012352',
-//       conversationId: '675a1b2c3d4e5f6789012345',
-//       senderId: '675a1b2c3d4e5f6789012346',
-//       messageType: 'TEXT',
-//       status: 'READ',
-//       isDeleted: false,
-//       isEdited: false,
-//       content: { text: 'Pretty good! Just working on some new projects' },
-//       createdAt: '2024-06-05T14:30:00Z',
-//       updatedAt: '2024-06-05T14:30:00Z',
-//     },
-//   ],
-//   '675a1b2c3d4e5f6789012347': [
-//     {
-//       id: '675a1b2c3d4e5f6789012353',
-//       conversationId: '675a1b2c3d4e5f6789012347',
-//       senderId: '675a1b2c3d4e5f6789012348',
-//       messageType: 'TEXT',
-//       status: 'READ',
-//       isDeleted: false,
-//       isEdited: false,
-//       content: { text: 'The new feature is ready for testing' },
-//       createdAt: '2024-06-05T13:14:00Z',
-//       updatedAt: '2024-06-05T13:14:00Z',
-//     },
-//     {
-//       id: '675a1b2c3d4e5f6789012354',
-//       conversationId: '675a1b2c3d4e5f6789012347',
-//       senderId: user?.id || 'current-user-id',
-//       messageType: 'TEXT',
-//       status: 'READ',
-//       isDeleted: false,
-//       isEdited: false,
-//       content: { text: "Great! I'll check it out now" },
-//       createdAt: '2024-06-05T13:15:00Z',
-//       updatedAt: '2024-06-05T13:15:00Z',
-//     },
-//   ],
-// }

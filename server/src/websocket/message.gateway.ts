@@ -28,17 +28,21 @@ export class MessageGateway {
     @ConnectedSocket() client: Socket,
   ) {
     try {
-      const savedMessage = await this.messageService.createMessage(data);
-
+      
       this.websocketGateway.emitToRoom(data.conversationId, 'newMessage', {
-        id: savedMessage.id,
-        senderId: savedMessage.senderId,
-        messageType: savedMessage.messageType,
-        content: savedMessage.content,
-        status: savedMessage.status,
-        createdAt: savedMessage.createdAt,
+        id: `msg_${Date.now()}`,
+        conversationId: data.conversationId,
+        senderId: data.senderId,
+        messageType: data.messageType,
+        content: data.content,
+        status: MessageStatus.SENT,
+        createdAt: new Date().toISOString(),
       });
 
+      const savedMessage = await this.messageService.createMessage(data);
+
+      if(savedMessage) console.log("message saved", savedMessage)
+      
       this.websocketGateway.emitToRoom(data.conversationId, 'userStoppedTyping', {
         userId: data.senderId,
       });
