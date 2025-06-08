@@ -47,15 +47,15 @@ const ChatLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
     setIsClient(true)
   }, [])
 
-  const { data: conversations = [], isLoading, isError, error } = useUserConversations(user?.id)
+  const { data: conversations = [], refetch: refetchConversations, isLoading, isError, error } = useUserConversations(user?.id)
 
   const conversationIds = conversations.map((conv) => conv.id)
 
-  const { data: messagesMap = {}, isLoading: messagesLoading } = useUserMessagesMap(conversationIds)
+  const { data: messagesMap = {}, isLoading: messagesLoading, refetch: refetchMessages } = useUserMessagesMap(conversationIds)
 
   useEffect(() => {
     if (socketConnection && user?.id && conversationIds.length > 0) {
-      console.log(conversationIds.length)
+      // console.log(conversationIds.length)
       conversationIds.forEach((conversationId) => {
         socketConnection.emit('joinRoom', {
           conversationId,
@@ -72,7 +72,7 @@ const ChatLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
   useEffect(() => {
     const handler = (message: Message) => {
       if (message.senderId !== user?.id) {
-        console.log('message received', message)
+        // console.log('message received', message)
 
         // ✅ Update query cache safely
         queryClient.setQueryData<{ [conversationId: string]: Message[] }>(['messagesMap', conversationIds], (oldData) => {
@@ -88,7 +88,11 @@ const ChatLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
 
           const updatedMessages = sortMessages([...existingMessages, message])
 
-          console.log('updatedMessages', updatedMessages)
+          // console.log('updatedMessages', updatedMessages)
+
+          setTimeout(() => {
+            refetchConversations()
+          }, 300)
 
           return {
             ...oldData,
@@ -110,6 +114,7 @@ const ChatLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
   // Update messages from query cache, ensuring they're sorted
   useEffect(() => {
     if (selectedConversationId && messagesMap[selectedConversationId]) {
+      refetchMessages()
       const sortedMessages = sortMessages(messagesMap[selectedConversationId])
       setMessages(sortedMessages)
     } else if (selectedConversationId) {
@@ -145,6 +150,10 @@ const ChatLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
 
         const existingMessages = oldData[selectedConversationId] || []
         const updatedMessages = sortMessages([...existingMessages, newMessage])
+
+        setTimeout(() => {
+          refetchConversations()
+        }, 300)
 
         return {
           ...oldData,

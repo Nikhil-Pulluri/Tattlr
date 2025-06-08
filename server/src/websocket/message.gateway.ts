@@ -41,7 +41,9 @@ export class MessageGateway {
 
       const savedMessage = await this.messageService.createMessage(data);
 
-      if(savedMessage) console.log("message saved", savedMessage)
+      // if(savedMessage) console.log("message saved", savedMessage)
+
+      if(!savedMessage) throw new Error("Failed to save message")
       
       this.websocketGateway.emitToRoom(data.conversationId, 'userStoppedTyping', {
         userId: data.senderId,

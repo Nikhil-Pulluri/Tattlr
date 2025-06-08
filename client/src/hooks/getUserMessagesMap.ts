@@ -42,7 +42,7 @@ async function fetchMessages(conversationId: string): Promise<Message[]> {
 }
 
 async function fetchMessagesMap(conversationIds : string[] | undefined){
-  console.log("message map called")
+  // console.log("message map called")
 
   const messageMap : { [conversationId: string]: Message[] } = {}
 

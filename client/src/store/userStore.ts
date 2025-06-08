@@ -70,7 +70,7 @@ export const useUserStore = create<UserStore>()(
         })
 
         newSocket.on('connect', () => {
-          console.log('Socket connected:', newSocket.id)
+          console.log('Socket connected')
         })
 
         newSocket.on('disconnect', () => {

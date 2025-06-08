@@ -1,6 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject, forwardRef } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { ConversationType, Conversation, ParticipantRole, ConversationParticipant } from 'generated/prisma';
+import { ConversationType, Conversation, ParticipantRole, ConversationParticipant, MessageContent, MessageType } from 'generated/prisma';
 import { MessageService } from 'src/message/message.service';
 
 
@@ -31,6 +31,7 @@ export interface decideConversation{
 export class ConversationService {
   constructor(
     private prisma : PrismaService,
+    @Inject(forwardRef(() => MessageService))
     private messageService : MessageService
   ){}
 
@@ -214,6 +215,35 @@ export class ConversationService {
       if(deleteConversation) return {status : "conversation deleted successfully"}
     }catch(error){
       console.log("conversation deletion failed", error)
+      throw error
+    }
+  }
+
+  async updateLastMessage(
+    conversationId : string,
+    messageId : string,
+    messagecontent : string,
+    messageType : MessageType,
+    messageSender : string,
+    messageTimeStamp : string,
+  ) : Promise<{status : string}> {
+    try{
+      const updateConversation = await this.prisma.conversation.update({
+        where : {
+          id : conversationId
+        },
+        data : {
+          lastMessageId : messageId,
+          lastMessageText : messagecontent,
+          lastMessageType : messageType,
+          lastMessageSender : messageSender,
+          lastMessageTimestamp: messageTimeStamp
+        }
+      })
+
+      if(updateConversation) return {status : "last message updated successfully"}
+    }catch(error){
+      console.log("last message update failed", error)
       throw error
     }
   }
