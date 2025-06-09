@@ -71,7 +71,7 @@ export default function SignupForm() {
     }
 
     try {
-      console.log('called')
+      // console.log('called')
       const response = await fetch(`/api/auth/signup`, {
         method: 'POST',
         headers: {

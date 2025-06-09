@@ -8,7 +8,7 @@ import { Server, Socket } from 'socket.io';
 import { ConnectionService } from './services/connection.service';
 
 @WebSocketGateway({
-  cors: { origin: '*' },
+  cors: { origin: '*', credentials : true },
 })
 export class MainGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
