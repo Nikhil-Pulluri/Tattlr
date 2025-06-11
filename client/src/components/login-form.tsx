@@ -23,7 +23,7 @@ export default function LoginForm() {
   const backend = process.env.NEXT_PUBLIC_BACKEND_URL
 
   useEffect(() => {
-    if (userStatus) router.push('dashboard/chats')
+    if (userStatus) router.push('/dashboard/chats')
     console.log(userStatus, 'from login')
     // console.log(user)
   }, [userStatus])
