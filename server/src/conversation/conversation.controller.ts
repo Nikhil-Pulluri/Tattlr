@@ -20,6 +20,12 @@ export class ConversationController {
   }
 
   @Public()
+  @Post('getConversationByIdWithParticipants')
+  async getConversationByIdWithParticipants(@Body() body : {conversationId : string}) : Promise<Conversation> {
+    return await this.conversationService.getConversationByIdWithPartipants(body.conversationId)
+  }
+
+  @Public()
   @Post('addUsertoAConversation')
   async addUsertoAConversation(
     @Body() props : newParticipant

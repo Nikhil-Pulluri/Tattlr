@@ -165,6 +165,28 @@ export class ConversationService {
     }
   }
 
+  async getConversationByIdWithPartipants(
+    conversationId : string
+  ) : Promise<Conversation> {
+    try{
+      const conversation = await this.prisma.conversation.findUnique(
+        {
+          where : {
+            id : conversationId
+          },
+          include : {
+            participants : true
+          }
+        }
+      )
+
+      return conversation
+    }catch(error){
+      console.log("conversation fetch failed", error)
+      throw error
+    }
+  }
+
 
   async getUserConversations(
     userId: string

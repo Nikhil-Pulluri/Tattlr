@@ -11,6 +11,7 @@ export class ConnectionService {
     this.connections.set(client.id, client);
   }
 
+
   removeConnection(client: Socket) {
     this.connections.delete(client.id);
     
