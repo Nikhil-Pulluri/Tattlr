@@ -1,6 +1,6 @@
 import { Controller } from '@nestjs/common';
 import { ConversationService } from './conversation.service';
-import {Post, Get, Body, Delete} from '@nestjs/common/decorators'
+import {Post, Body, Delete} from '@nestjs/common/decorators'
 import { Public } from 'src/auth/public.decorator';
 import { decideConversation, newParticipant } from './conversation.service';
 import { Conversation } from 'generated/prisma';

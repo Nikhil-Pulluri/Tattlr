@@ -41,7 +41,7 @@ const ChatLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
   const [isVideoCallActive, setIsVideoCallActive] = useState(false)
   const [isVideoModalOpen, setIsVideoModalOpen] = useState(false)
 
-  const { user, userStatus } = useUserStore()
+  const { user } = useUserStore()
   const socketConnection = useUserStore((state) => state.socket)
   const queryClient = useQueryClient()
 

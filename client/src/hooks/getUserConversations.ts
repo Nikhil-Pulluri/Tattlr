@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query"
 
+
 interface Conversation {
   id: string
   type: 'PRIVATE' | 'GROUP'

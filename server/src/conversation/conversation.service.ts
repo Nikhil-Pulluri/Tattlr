@@ -156,7 +156,7 @@ export class ConversationService {
         {
           where : {
             id : conversationId
-          }
+          },
         }
       )
       return conversation

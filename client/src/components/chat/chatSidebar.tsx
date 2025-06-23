@@ -2,6 +2,9 @@
 
 import React, { useState } from 'react'
 import { Search } from 'lucide-react'
+import AddNewChat from '../ui/newChat'
+import NewChatModal from '../ui/newUser'
+import { useUserStore } from '@/store/userStore'
 
 interface User {
   id: string
@@ -12,7 +15,7 @@ interface User {
   profilePicture?: string
   gender: 'MALE' | 'FEMALE'
   isOnline: boolean
-  lastSeen: string // Changed from Date to string
+  lastSeen: string
   status: 'AVAILABLE' | 'AWAY' | 'BUSY' | 'INVISIBLE'
 }
 
@@ -27,10 +30,10 @@ interface Conversation {
   isArchived: boolean
   lastMessageText?: string
   lastMessageSender?: string
-  lastMessageTimestamp?: string // Changed from Date to string
+  lastMessageTimestamp?: string
   lastMessageType?: 'TEXT' | 'IMAGE' | 'FILE' | 'AUDIO' | 'VIDEO' | 'LOCATION' | 'SYSTEM'
-  createdAt: string // Changed from Date to string
-  updatedAt: string // Changed from Date to string
+  createdAt: string
+  updatedAt: string
 }
 
 interface Message {
@@ -55,8 +58,8 @@ interface Message {
     systemAction?: 'USER_JOINED' | 'USER_LEFT' | 'USER_ADDED' | 'USER_REMOVED' | 'GROUP_CREATED' | 'GROUP_RENAMED'
   }
   replyToId?: string
-  createdAt: string // Changed from Date to string
-  updatedAt: string // Changed from Date to string
+  createdAt: string
+  updatedAt: string
 }
 
 interface ConversationParticipant {
@@ -64,13 +67,13 @@ interface ConversationParticipant {
   conversationId: string
   userId: string
   role: 'MEMBER' | 'ADMIN' | 'OWNER'
-  joinedAt: string // Changed from Date to string
-  leftAt?: string // Changed from Date to string
+  joinedAt: string
+  leftAt?: string
   isActive: boolean
   isMuted: boolean
   nickname?: string
   lastReadMessageId?: string
-  lastReadAt?: string // Changed from Date to string
+  lastReadAt?: string
 }
 
 interface ChatSidebarProps {
@@ -82,9 +85,14 @@ interface ChatSidebarProps {
 const ChatSidebar: React.FC<ChatSidebarProps> = ({ conversations, selectedConversationId, onConversationSelect }) => {
   const [searchTerm, setSearchTerm] = useState('')
 
-  // console.log('side', conversations)
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isCreating, setIsCreating] = useState(false)
 
   const filteredConversations = conversations.filter((conversation) => (conversation.name || '').toLowerCase().includes(searchTerm.toLowerCase()))
+
+  const backend = process.env.NEXT_PUBLIC_BACKEND_URL
+
+  const { user } = useUserStore()
 
   const formatTime = (timestamp?: string) => {
     if (!timestamp) return ''
@@ -106,18 +114,39 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({ conversations, selectedConver
     if (conversation.type === 'GROUP') {
       return conversation.groupImage || '👥'
     }
-    // For private conversations, you would typically get the other participant's profile picture
     return '👤'
   }
 
   const getUnreadCount = (conversation: Conversation) => {
-    // This would typically be calculated based on lastReadAt vs lastMessageTimestamp
-    // For now, returning dummy data
     return Math.floor(Math.random() * 3)
   }
 
+  const handleCreateChat = async (userId: string) => {
+    setIsCreating(true)
+    try {
+      var body = {
+        userIds: [userId, user?.id],
+        type: 'PRIVATE',
+      }
+      const createNewChat = await fetch(`${backend}/conversation/createConversation`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body),
+      })
+
+      if (!createNewChat.ok) throw new Error('Failed to create chat')
+      setIsModalOpen(false)
+    } catch (error) {
+      console.error('Failed to create chat:', error)
+    } finally {
+      setIsCreating(false)
+    }
+  }
+
   return (
-    <div className="w-full sm:w-80 md:w-96 lg:w-80 xl:w-96 bg-white dark:bg-neutral-800 border-r border-gray-200 dark:border-neutral-700 flex flex-col">
+    <div className="relative w-full sm:w-80 md:w-96 lg:w-80 xl:w-96 bg-white dark:bg-neutral-800 border-r border-gray-200 dark:border-neutral-700 flex flex-col">
       <div className="p-4 border-b border-gray-200 dark:border-neutral-700">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold text-gray-800 dark:text-white">Messages</h2>
@@ -135,7 +164,9 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({ conversations, selectedConver
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto pb-20">
+        {' '}
+        {/* Add padding bottom for floating button space */}
         {filteredConversations.map((conversation) => {
           const isSelected = selectedConversationId === conversation.id
           const unreadCount = getUnreadCount(conversation)
@@ -145,7 +176,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({ conversations, selectedConver
               key={conversation.id}
               onClick={() => onConversationSelect(conversation.id)}
               className={`p-4 border-b cursor-pointer transition-colors duration-200
-                ${isSelected ? 'bg-blue-50 dark:bg-[#4267B2] border-r-2 ' : 'hover:bg-gray-50 dark:hover:bg-neutral-900'}
+                ${isSelected ? 'bg-blue-50 dark:bg-[#4267B2] border-r-2' : 'hover:bg-gray-50 dark:hover:bg-neutral-900'}
                 border-gray-100 dark:border-neutral-700
                 text-gray-900 dark:text-white`}
             >
@@ -167,6 +198,11 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({ conversations, selectedConver
             </div>
           )
         })}
+      </div>
+
+      <div className="absolute bottom-4 right-4 z-20">
+        <AddNewChat addNew={() => setIsModalOpen(true)} />
+        <NewChatModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onCreateChat={handleCreateChat} isLoading={isCreating} />
       </div>
     </div>
   )
