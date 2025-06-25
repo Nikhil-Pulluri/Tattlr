@@ -1,5 +1,5 @@
 'use client'
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import ChatSidebar from './chatSidebar'
 import ChatWindow from './chatWindow'
 import VideoConference from '../video/videoConference'
@@ -34,6 +34,19 @@ interface Message {
   updatedAt: string
 }
 
+// Debounce utility function
+const debounce = (func: Function, wait: number) => {
+  let timeout: NodeJS.Timeout
+  return function executedFunction(...args: any[]) {
+    const later = () => {
+      clearTimeout(timeout)
+      func(...args)
+    }
+    clearTimeout(timeout)
+    timeout = setTimeout(later, wait)
+  }
+}
+
 const ChatLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null)
   const [messages, setMessages] = useState<Message[]>([])
@@ -51,9 +64,40 @@ const ChatLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
 
   const { data: conversations = [], refetch: refetchConversations, isLoading, isError, error } = useUserConversations(user?.id)
 
-  const conversationIds = conversations.map((conv) => conv.id)
+  const conversationIds = useMemo(() => conversations.map((conv) => conv.id), [conversations])
 
   const { data: messagesMap = {}, isLoading: messagesLoading, refetch: refetchMessages } = useUserMessagesMap(conversationIds)
+
+  // Memoize the sorting function
+  const sortMessages = useCallback((messages: Message[]): Message[] => {
+    return [...messages].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+  }, [])
+
+  // Debounced refetch to avoid multiple rapid calls
+  const debouncedRefetchConversations = useCallback(
+    debounce(() => {
+      refetchConversations()
+    }, 500),
+    [refetchConversations]
+  )
+
+  // Centralized message update function
+  const updateMessagesInCache = useCallback(
+    (conversationId: string, updateFn: (messages: Message[]) => Message[]) => {
+      queryClient.setQueryData<{ [conversationId: string]: Message[] }>(['messagesMap', conversationIds], (oldData) => {
+        if (!oldData) return { [conversationId]: updateFn([]) }
+
+        const existingMessages = oldData[conversationId] || []
+        const updatedMessages = updateFn(existingMessages)
+
+        return {
+          ...oldData,
+          [conversationId]: updatedMessages,
+        }
+      })
+    },
+    [queryClient, conversationIds]
+  )
 
   useEffect(() => {
     if (socketConnection && user?.id && conversationIds.length > 0) {
@@ -66,63 +110,49 @@ const ChatLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
     }
   }, [socketConnection, user?.id, conversationIds])
 
-  const sortMessages = (messages: Message[]): Message[] => {
-    return [...messages].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
-  }
-
   useEffect(() => {
-    const handler = (message: Message) => {
-      if (message.senderId !== user?.id) {
-        queryClient.setQueryData<{ [conversationId: string]: Message[] }>(['messagesMap', conversationIds], (oldData) => {
-          if (!oldData) return {}
+    const handleNewMessage = (message: Message) => {
+      if (message.senderId === user?.id) return
 
-          const existingMessages = oldData[message.conversationId] || []
-          const messageExists = existingMessages.some((msg) => msg.id === message.id)
-          if (messageExists) {
-            return oldData
-          }
+      updateMessagesInCache(message.conversationId, (existingMessages) => {
+        const messageExists = existingMessages.some((msg) => msg.id === message.id)
+        if (messageExists) return existingMessages
 
-          const updatedMessages = sortMessages([...existingMessages, message])
+        const newMessages = [...existingMessages, message]
+        return sortMessages(newMessages)
+      })
 
-          setTimeout(() => {
-            refetchConversations()
-          }, 300)
-
-          return {
-            ...oldData,
-            [message.conversationId]: updatedMessages,
-          }
-        })
-      }
+      debouncedRefetchConversations()
     }
 
-    socketConnection?.on('newMessage', handler)
+    socketConnection?.on('newMessage', handleNewMessage)
 
     return () => {
-      socketConnection?.off('newMessage', handler)
+      socketConnection?.off('newMessage', handleNewMessage)
     }
-  }, [socketConnection, user?.id, conversationIds, queryClient])
+  }, [socketConnection, user?.id, updateMessagesInCache, sortMessages, debouncedRefetchConversations])
 
-  const selectedConversation = conversations.find((conv) => conv.id === selectedConversationId) || null
+  const selectedConversation = useMemo(() => conversations.find((conv) => conv.id === selectedConversationId) || null, [conversations, selectedConversationId])
 
   useEffect(() => {
     if (selectedConversationId && messagesMap[selectedConversationId]) {
-      refetchMessages()
       const sortedMessages = sortMessages(messagesMap[selectedConversationId])
       setMessages(sortedMessages)
     } else if (selectedConversationId) {
       setMessages([])
     }
-  }, [selectedConversationId, messagesMap])
+  }, [selectedConversationId, messagesMap, sortMessages])
 
-  const handleConversationSelect = (conversationId: string): void => {
+  const handleConversationSelect = useCallback((conversationId: string): void => {
     setSelectedConversationId(conversationId)
-  }
+  }, [])
 
-  const handleSendMessage = (messageText: string): void => {
-    if (selectedConversationId && user) {
-      const newMessage: Message = {
-        id: `msg_${Date.now()}_${Math.random()}`,
+  const handleSendMessage = useCallback(
+    (messageText: string): void => {
+      if (!selectedConversationId || !user) return
+
+      const optimisticMessage: Message = {
+        id: `temp_${Date.now()}_${Math.random()}`, // Use temp prefix for optimistic updates
         conversationId: selectedConversationId,
         senderId: user.id,
         messageType: 'TEXT',
@@ -134,22 +164,11 @@ const ChatLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
         updatedAt: new Date().toISOString(),
       }
 
-      setMessages((prev) => sortMessages([...prev, newMessage]))
+      // Optimistic update - add message immediately
+      setMessages((prev) => sortMessages([...prev, optimisticMessage]))
 
-      queryClient.setQueryData<{ [conversationId: string]: Message[] }>(['messagesMap', conversationIds], (oldData) => {
-        if (!oldData) return { [selectedConversationId]: [newMessage] }
-
-        const existingMessages = oldData[selectedConversationId] || []
-        const updatedMessages = sortMessages([...existingMessages, newMessage])
-
-        setTimeout(() => {
-          refetchConversations()
-        }, 300)
-
-        return {
-          ...oldData,
-          [selectedConversationId]: updatedMessages,
-        }
+      updateMessagesInCache(selectedConversationId, (existingMessages) => {
+        return sortMessages([...existingMessages, optimisticMessage])
       })
 
       try {
@@ -161,26 +180,24 @@ const ChatLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
             text: messageText,
           },
         })
+
+        // Only refetch conversations after successful send (debounced)
+        debouncedRefetchConversations()
       } catch (error) {
         console.log('error sending message via socket', error)
 
-        setMessages((prev) => prev.filter((msg) => msg.id !== newMessage.id))
-        queryClient.setQueryData<{ [conversationId: string]: Message[] }>(['messagesMap', conversationIds], (oldData) => {
-          if (!oldData) return {}
+        // Rollback optimistic update
+        setMessages((prev) => prev.filter((msg) => msg.id !== optimisticMessage.id))
 
-          const existingMessages = oldData[selectedConversationId] || []
-          const rolledBackMessages = existingMessages.filter((msg) => msg.id !== newMessage.id)
-
-          return {
-            ...oldData,
-            [selectedConversationId]: rolledBackMessages,
-          }
+        updateMessagesInCache(selectedConversationId, (existingMessages) => {
+          return existingMessages.filter((msg) => msg.id !== optimisticMessage.id)
         })
 
         throw error
       }
-    }
-  }
+    },
+    [selectedConversationId, user, socketConnection, updateMessagesInCache, sortMessages, debouncedRefetchConversations]
+  )
 
   const handleStartVideoCall = () => {
     if (selectedConversationId) {
@@ -296,6 +313,8 @@ const ChatLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
 }
 
 export default ChatLayout
+
+// ---------------------------------------------------------------------------------------
 
 // 'use client'
 // import React, { useState, useEffect } from 'react'
