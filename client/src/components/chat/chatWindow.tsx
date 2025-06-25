@@ -10,6 +10,7 @@ interface Conversation {
   description?: string
   groupImage?: string
   participantCount: number
+  participants: ConversationParticipant[]
   messageCount: number
   isArchived: boolean
   lastMessageText?: string
@@ -18,6 +19,20 @@ interface Conversation {
   lastMessageType?: 'TEXT' | 'IMAGE' | 'FILE' | 'AUDIO' | 'VIDEO' | 'LOCATION' | 'SYSTEM'
   createdAt: string
   updatedAt: string
+}
+
+interface ConversationParticipant {
+  id: string
+  conversationId: string
+  userId: string
+  role: 'MEMBER' | 'ADMIN' | 'OWNER'
+  joinedAt: string
+  leftAt?: string
+  isActive: boolean
+  isMuted: boolean
+  nickname?: string
+  lastReadMessageId?: string
+  lastReadAt?: string
 }
 
 interface Message {
@@ -56,7 +71,47 @@ interface ChatWindowProps {
 
 const ChatWindow: React.FC<ChatWindowProps> = ({ conversation, messages, onSendMessage, currentUserId, onStartVideoCall }) => {
   const [message, setMessage] = useState('')
+  const [privateName, setPrivateName] = useState<string>('Loading...')
   const messageEndRef = useRef<HTMLDivElement>(null)
+
+  const backend = process.env.NEXT_PUBLIC_BACKEND_URL
+
+  useEffect(() => {
+    const getName = async () => {
+      if (conversation?.type === 'PRIVATE') {
+        const name = await decideConversatoinName()
+        if (name) setPrivateName(name)
+        else setPrivateName('Unknown')
+      }
+    }
+
+    getName()
+  }, [conversation])
+
+  const decideConversatoinName = async (): Promise<string | undefined> => {
+    const userId = conversation?.participants?.find((participant) => participant.userId !== currentUserId)?.userId
+
+    // console.log(userId, 'from chat window')
+    // console.log(conversation)
+
+    try {
+      const response = await fetch(`${backend}/user/getUserById?userId=${userId}`, {
+        method: 'GET',
+        headers: {
+          'content-type': 'application/json',
+        },
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        // console.log(data.name)
+        return data.name
+      }
+    } catch (error) {
+      console.log(error)
+      throw error
+    }
+  }
 
   const handleSendMessage = (): void => {
     if (message.trim()) {
@@ -115,7 +170,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation, messages, onSendM
         <div className="flex items-center space-x-3">
           <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-neutral-900 flex items-center justify-center text-lg">{getConversationAvatar(conversation)}</div>
           <div>
-            <h2 className="font-semibold text-gray-900 dark:text-white">{conversation.name || `Conversation ${conversation.id.slice(-4)}`}</h2>
+            <h2 className="font-semibold text-gray-900 dark:text-white">{conversation.type === 'PRIVATE' ? privateName : conversation.name}</h2>
             <p className="text-sm text-gray-500 dark:text-gray-400">{getConversationStatus(conversation)}</p>
           </div>
 

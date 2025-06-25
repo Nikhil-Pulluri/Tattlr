@@ -1,4 +1,4 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Controller, Get, Query, Body, Post } from '@nestjs/common';
 import { UserService } from './user.service';
 import { User } from 'generated/prisma';
 import { Public } from 'src/auth/public.decorator';
@@ -17,5 +17,19 @@ export class UserController {
     return await this.userService.getUsersByUsername(username)
   }
 
+  @Public()
+  @Get('getUserById')
+  async getMyUser(
+    @Query('userId') userId : string
+  ) : Promise<User>{
+    return await this.userService.getUserbyId(userId)
+  }
 
+  @Public()
+  @Post('getUsersBatched')
+  async getUsersBatched(
+    @Body() body : {userIds : string[]}
+  ) {
+    return await this.userService.getUserNamesInBatch(body.userIds)
+  }
 }

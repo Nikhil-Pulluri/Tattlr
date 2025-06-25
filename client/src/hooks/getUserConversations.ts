@@ -7,6 +7,7 @@ interface Conversation {
   name?: string
   description?: string
   groupImage?: string
+  participants : ConversationParticipant[]
   participantCount: number
   messageCount: number
   isArchived: boolean
@@ -16,6 +17,21 @@ interface Conversation {
   lastMessageType?: 'TEXT' | 'IMAGE' | 'FILE' | 'AUDIO' | 'VIDEO' | 'LOCATION' | 'SYSTEM'
   createdAt: string
   updatedAt: string
+}
+
+
+interface ConversationParticipant {
+  id: string
+  conversationId: string
+  userId: string
+  role: 'MEMBER' | 'ADMIN' | 'OWNER'
+  joinedAt: string
+  leftAt?: string
+  isActive: boolean
+  isMuted: boolean
+  nickname?: string
+  lastReadMessageId?: string
+  lastReadAt?: string
 }
 
 

@@ -1,10 +1,11 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Search } from 'lucide-react'
 import AddNewChat from '../ui/newChat'
 import NewChatModal from '../ui/newUser'
 import { useUserStore } from '@/store/userStore'
+import { useUserConversations } from '@/hooks/getUserConversations'
 
 interface User {
   id: string
@@ -25,6 +26,7 @@ interface Conversation {
   name?: string
   description?: string
   groupImage?: string
+  participants: ConversationParticipant[]
   participantCount: number
   messageCount: number
   isArchived: boolean
@@ -36,31 +38,31 @@ interface Conversation {
   updatedAt: string
 }
 
-interface Message {
-  id: string
-  conversationId: string
-  senderId: string
-  messageType: 'TEXT' | 'IMAGE' | 'FILE' | 'AUDIO' | 'VIDEO' | 'LOCATION' | 'SYSTEM'
-  status: 'SENT' | 'DELIVERED' | 'READ'
-  isDeleted: boolean
-  isEdited: boolean
-  content?: {
-    text?: string
-    mediaUrl?: string
-    fileName?: string
-    fileSize?: number
-    mimeType?: string
-    location?: {
-      latitude: number
-      longitude: number
-      address?: string
-    }
-    systemAction?: 'USER_JOINED' | 'USER_LEFT' | 'USER_ADDED' | 'USER_REMOVED' | 'GROUP_CREATED' | 'GROUP_RENAMED'
-  }
-  replyToId?: string
-  createdAt: string
-  updatedAt: string
-}
+// interface Message {
+//   id: string
+//   conversationId: string
+//   senderId: string
+//   messageType: 'TEXT' | 'IMAGE' | 'FILE' | 'AUDIO' | 'VIDEO' | 'LOCATION' | 'SYSTEM'
+//   status: 'SENT' | 'DELIVERED' | 'READ'
+//   isDeleted: boolean
+//   isEdited: boolean
+//   content?: {
+//     text?: string
+//     mediaUrl?: string
+//     fileName?: string
+//     fileSize?: number
+//     mimeType?: string
+//     location?: {
+//       latitude: number
+//       longitude: number
+//       address?: string
+//     }
+//     systemAction?: 'USER_JOINED' | 'USER_LEFT' | 'USER_ADDED' | 'USER_REMOVED' | 'GROUP_CREATED' | 'GROUP_RENAMED'
+//   }
+//   replyToId?: string
+//   createdAt: string
+//   updatedAt: string
+// }
 
 interface ConversationParticipant {
   id: string
@@ -88,11 +90,15 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({ conversations, selectedConver
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isCreating, setIsCreating] = useState(false)
 
+  const [userNameMap, setUserNameMap] = useState<Record<string, string>>({})
+
   const filteredConversations = conversations.filter((conversation) => (conversation.name || '').toLowerCase().includes(searchTerm.toLowerCase()))
 
   const backend = process.env.NEXT_PUBLIC_BACKEND_URL
 
   const { user } = useUserStore()
+
+  const { refetch: refetchConversations } = useUserConversations(user?.id)
 
   const formatTime = (timestamp?: string) => {
     if (!timestamp) return ''
@@ -136,6 +142,8 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({ conversations, selectedConver
         body: JSON.stringify(body),
       })
 
+      if (createNewChat.ok) await refetchConversations()
+
       if (!createNewChat.ok) throw new Error('Failed to create chat')
       setIsModalOpen(false)
     } catch (error) {
@@ -144,6 +152,65 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({ conversations, selectedConver
       setIsCreating(false)
     }
   }
+
+  const getUserIdFromConversation = (conversation: Conversation): string => {
+    if (!conversation) {
+      console.log('please provide a valid conversation')
+    }
+    var userId: string | undefined = ''
+
+    try {
+      userId = conversation?.participants?.find((participant) => {
+        return participant.userId !== user?.id
+      })?.userId
+    } catch (error) {
+      console.log(error)
+      throw error
+    }
+
+    if (userId) return userId
+    else return ''
+  }
+
+  useEffect(() => {
+    if (!user) return
+
+    const privateChatsUserIds = conversations
+      ?.filter((conversation) => {
+        return conversation.type === 'PRIVATE'
+      })
+      ?.map((conversation) => {
+        const otherParticipant = conversation?.participants?.find((participant) => participant?.userId !== user.id)
+        return otherParticipant?.userId
+      })
+      ?.filter((userId) => userId !== undefined)
+
+    const uniqueIds = [...new Set(privateChatsUserIds)]
+
+    const fetchUserNames = async () => {
+      try {
+        const userMap = await fetch(`${backend}/user/getUsersBatched`, {
+          method: 'POST',
+          headers: {
+            'content-type': 'application/json',
+          },
+          body: JSON.stringify({
+            userIds: uniqueIds,
+          }),
+        })
+
+        if (userMap.ok) {
+          const map = await userMap.json()
+          setUserNameMap(map)
+        }
+      } catch (error) {
+        console.log(error)
+        throw error
+      }
+    }
+
+    fetchUserNames()
+  }, [user, conversations])
 
   return (
     <div className="relative w-full sm:w-80 md:w-96 lg:w-80 xl:w-96 bg-white dark:bg-neutral-800 border-r border-gray-200 dark:border-neutral-700 flex flex-col">
@@ -185,7 +252,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({ conversations, selectedConver
 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">
-                    <h3 className="font-medium truncate">{conversation.name || `Conversation ${conversation.id.slice(-4)}`}</h3>
+                    <h3 className="font-medium truncate">{conversation.type === 'PRIVATE' ? userNameMap[getUserIdFromConversation(conversation)] : conversation.name}</h3>
                     <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">{formatTime(conversation.lastMessageTimestamp)}</span>
                   </div>
 

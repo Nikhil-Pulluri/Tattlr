@@ -205,6 +205,9 @@ export class ConversationService {
             }
           }
         },
+        include : {
+          participants : true
+        },
         orderBy: {
           updatedAt: 'desc' 
         }
