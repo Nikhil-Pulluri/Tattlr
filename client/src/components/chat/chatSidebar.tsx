@@ -233,7 +233,6 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({ conversations, selectedConver
 
       <div className="flex-1 overflow-y-auto pb-20">
         {' '}
-        {/* Add padding bottom for floating button space */}
         {filteredConversations.map((conversation) => {
           const isSelected = selectedConversationId === conversation.id
           const unreadCount = getUnreadCount(conversation)

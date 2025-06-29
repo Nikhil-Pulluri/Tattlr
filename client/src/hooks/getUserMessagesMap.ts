@@ -8,7 +8,7 @@ interface Message {
   status: 'SENT' | 'DELIVERED' | 'READ'
   isDeleted: boolean
   isEdited: boolean
-  content?: {
+  content?: { 
     text?: string
     mediaUrl?: string
     fileName?: string
