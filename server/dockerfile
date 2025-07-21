@@ -1,0 +1,32 @@
+# Build stage
+FROM node:20 AS build
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm install
+
+COPY . .
+
+# Generate Prisma client
+RUN npx prisma generate
+
+# Build the app
+RUN npm run build
+
+# Production stage
+FROM node:20
+
+WORKDIR /app
+
+COPY package.json ./
+RUN npm install --only=production
+
+# Copy compiled code and generated Prisma client
+COPY --from=build /app/dist ./dist
+COPY --from=build /app/generated ./generated
+
+# ✅ Copy the real .env from your local machine
+COPY .env .env
+
+CMD ["npm", "run", "start:prod"]
