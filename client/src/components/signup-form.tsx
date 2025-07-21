@@ -25,7 +25,7 @@ export default function SignupForm() {
   const { setUser, userStatus } = useUserStore()
 
   useEffect(() => {
-    if (userStatus) router.push('dashboard/chats')
+    if (userStatus) router.push('/dashboard/chats')
   }, [userStatus])
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {

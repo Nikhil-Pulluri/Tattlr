@@ -156,12 +156,34 @@ export class ConversationService {
         {
           where : {
             id : conversationId
-          }
+          },
         }
       )
       return conversation
     }catch(error){
       console.log("conversation fetch failed", error)
+    }
+  }
+
+  async getConversationByIdWithPartipants(
+    conversationId : string
+  ) : Promise<Conversation> {
+    try{
+      const conversation = await this.prisma.conversation.findUnique(
+        {
+          where : {
+            id : conversationId
+          },
+          include : {
+            participants : true
+          }
+        }
+      )
+
+      return conversation
+    }catch(error){
+      console.log("conversation fetch failed", error)
+      throw error
     }
   }
 
@@ -182,6 +204,9 @@ export class ConversationService {
               isActive: true  
             }
           }
+        },
+        include : {
+          participants : true
         },
         orderBy: {
           updatedAt: 'desc' 

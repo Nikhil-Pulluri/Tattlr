@@ -6,9 +6,10 @@ import { PrismaModule } from './prisma/prisma.module';
 import { ConversationModule } from './conversation/conversation.module';
 import { MessageModule } from './message/message.module';
 import { WebsocketsModule } from './websocket/websockets.module';
+import { UserModule } from './user/user.module';
 
 @Module({
-  imports: [AuthModule, PrismaModule, ConversationModule, MessageModule, WebsocketsModule],
+  imports: [AuthModule, PrismaModule, ConversationModule, MessageModule, WebsocketsModule, UserModule],
   controllers: [AppController],
   providers: [AppService],
 })
